@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="../../styles.css" />
+<style>
+:root{--type-title:64px;--type-subtitle:44px;--type-body:34px;--type-small:28px;--pad-top:100px;--pad-bottom:80px;--pad-x:100px;--gap-title:52px;--gap-item:28px}
+</style>
+</helmet>
+<x-import component-from-global-scope="deck-stage" from="./deck-stage.js" width="1920" height="1080" hint-size="100%,100%">
+
+<section data-label="Cover" style="background:linear-gradient(135deg,#0D0D1A 0%,#13132B 60%,#1a0a35 100%);display:flex;flex-direction:column;align-items:center;justify-content:center;font-family:var(--font-sans)">
+  <img src="../../assets/logo.png" alt="UnReal BS" style="height:260px;width:auto;margin-bottom:44px" />
+  <p style="font-size:var(--type-subtitle);color:rgba(255,255,255,.7);margin:0 0 8px;letter-spacing:.02em">Lifting Up Bangladesh Enterprises</p>
+  <p style="font-size:var(--type-small);color:rgba(255,255,255,.4);margin:64px 0 0;letter-spacing:.04em;text-transform:uppercase">Investor Presentation</p>
+</section>
+
+<section data-label="Problem" style="background:#fff;display:flex;flex-direction:column;padding:var(--pad-top) var(--pad-x) var(--pad-bottom);font-family:var(--font-sans)">
+  <h1 style="font-size:var(--type-title);font-weight:800;color:var(--indigo-950);margin:0 0 var(--gap-title);letter-spacing:-.02em;line-height:1.15;max-width:1500px">Bangladeshi entrepreneurs are running businesses on WhatsApp and guesswork</h1>
+  <div style="display:flex;gap:56px;margin-top:24px">
+    <div style="flex:1"><p style="font-size:var(--type-body);color:var(--gray-700);line-height:1.4;margin:0">Leads, customers, and orders live scattered across <span style="font-weight:700;color:var(--indigo-950)">WhatsApp threads</span>, spreadsheets, and memory.</p></div>
+    <div style="flex:1"><p style="font-size:var(--type-body);color:var(--gray-700);line-height:1.4;margin:0">Every mainstream CRM is <span style="font-weight:700;color:var(--indigo-950)">built in English</span>, for markets that aren't this one.</p></div>
+    <div style="flex:1"><p style="font-size:var(--type-body);color:var(--gray-700);line-height:1.4;margin:0">Owners spend hours on <span style="font-weight:700;color:var(--indigo-950)">manual follow-up</span> instead of growing the business.</p></div>
+  </div>
+</section>
+
+<section data-label="Solution" style="background:linear-gradient(135deg,#0D0D1A 0%,#13132B 100%);display:flex;flex-direction:column;padding:var(--pad-top) var(--pad-x) var(--pad-bottom);font-family:var(--font-sans)">
+  <h1 style="font-size:var(--type-title);font-weight:800;color:#fff;margin:0 0 24px;letter-spacing:-.02em;line-height:1.15;max-width:1500px">UnReal BS is a Bangla-first business operating system</h1>
+  <p style="font-size:var(--type-body);color:rgba(255,255,255,.6);margin:0 0 var(--gap-title);max-width:1200px;line-height:1.4">One product that replaces the scattered stack — in the language entrepreneurs already work in.</p>
+  <div style="display:flex;gap:24px;margin-top:12px">
+    <div style="flex:1;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:24px;padding:32px"><p style="font-size:var(--type-small);font-weight:700;color:var(--violet-400);margin:0 0 8px">CRM & Messaging</p><p style="font-size:24px;color:rgba(255,255,255,.55);margin:0;line-height:1.4">Contacts, conversations, and pipeline in one place</p></div>
+    <div style="flex:1;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:24px;padding:32px"><p style="font-size:var(--type-small);font-weight:700;color:var(--violet-400);margin:0 0 8px">Automation</p><p style="font-size:24px;color:rgba(255,255,255,.55);margin:0;line-height:1.4">Workflows that follow up automatically</p></div>
+    <div style="flex:1;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:24px;padding:32px"><p style="font-size:var(--type-small);font-weight:700;color:var(--violet-400);margin:0 0 8px">AI Agent</p><p style="font-size:24px;color:rgba(255,255,255,.55);margin:0;line-height:1.4">BhaiFreakin — a Bangla-speaking assistant</p></div>
+    <div style="flex:1;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:24px;padding:32px"><p style="font-size:var(--type-small);font-weight:700;color:var(--violet-400);margin:0 0 8px">Ecosystem</p><p style="font-size:24px;color:rgba(255,255,255,.55);margin:0;line-height:1.4">A marketplace of installable agents & skills</p></div>
+  </div>
+</section>
+
+<section data-label="Product — Dashboard" style="background:#fff;display:flex;padding:var(--pad-top) var(--pad-x) var(--pad-bottom);gap:64px;font-family:var(--font-sans)">
+  <div style="width:560px;flex-shrink:0;display:flex;flex-direction:column;justify-content:center">
+    <h1 style="font-size:var(--type-subtitle);font-weight:800;color:var(--indigo-950);margin:0 0 var(--gap-title);line-height:1.2">One dashboard for the whole business</h1>
+    <p style="font-size:var(--type-body);color:var(--gray-700);margin:0 0 var(--gap-item);line-height:1.4">Contacts, pipeline value, conversations, and running automations — at a glance, in Bangla.</p>
+    <p style="font-size:var(--type-body);color:var(--gray-700);margin:0;line-height:1.4">The owner opens one screen instead of five apps.</p>
+  </div>
+  <div style="flex:1;display:flex;align-items:center;justify-content:center;background:var(--surface-app);border-radius:24px;overflow:hidden;box-shadow:var(--shadow-lg)"><img src="shot-dashboard.png" alt="UnReal BS dashboard" style="width:100%;display:block" /></div>
+</section>
+
+<section data-label="Product — Agentic HQ" style="background:#fff;display:flex;padding:var(--pad-top) var(--pad-x) var(--pad-bottom);gap:64px;font-family:var(--font-sans)">
+  <div style="width:560px;flex-shrink:0;display:flex;flex-direction:column;justify-content:center">
+    <h1 style="font-size:var(--type-subtitle);font-weight:800;color:var(--indigo-950);margin:0 0 var(--gap-title);line-height:1.2">BhaiFreakin: an AI co-founder that speaks Bangla</h1>
+    <p style="font-size:var(--type-body);color:var(--gray-700);margin:0 0 var(--gap-item);line-height:1.4">A flagship AI agent that answers business questions and can be extended with ready-made or custom agents.</p>
+    <p style="font-size:var(--type-body);color:var(--gray-700);margin:0;line-height:1.4">The Agentic HQ is where every one of those agents is installed and managed.</p>
+  </div>
+  <div style="flex:1;display:flex;align-items:center;justify-content:center;background:var(--surface-app);border-radius:24px;overflow:hidden;box-shadow:var(--shadow-lg)"><img src="shot-agentic.png" alt="UnReal BS Agentic HQ" style="width:100%;display:block" /></div>
+</section>
+
+<section data-label="Product — Workflows" style="background:#fff;display:flex;padding:var(--pad-top) var(--pad-x) var(--pad-bottom);gap:64px;font-family:var(--font-sans)">
+  <div style="width:560px;flex-shrink:0;display:flex;flex-direction:column;justify-content:center">
+    <h1 style="font-size:var(--type-subtitle);font-weight:800;color:var(--indigo-950);margin:0 0 var(--gap-title);line-height:1.2">Automation that runs while you sleep</h1>
+    <p style="font-size:var(--type-body);color:var(--gray-700);margin:0 0 var(--gap-item);line-height:1.4">A visual, when-this-then-that builder turns follow-up and lead nurture into background work.</p>
+    <p style="font-size:var(--type-body);color:var(--gray-700);margin:0;line-height:1.4">No developer required to publish a new automation.</p>
+  </div>
+  <div style="flex:1;display:flex;align-items:center;justify-content:center;background:var(--surface-app);border-radius:24px;overflow:hidden;box-shadow:var(--shadow-lg)"><img src="shot-workflows.png" alt="UnReal BS workflows" style="width:100%;display:block" /></div>
+</section>
+
+<section data-label="Positioning" style="background:#fff;display:flex;flex-direction:column;padding:var(--pad-top) var(--pad-x) var(--pad-bottom);font-family:var(--font-sans)">
+  <h1 style="font-size:var(--type-title);font-weight:800;color:var(--indigo-950);margin:0 0 var(--gap-title);letter-spacing:-.02em;line-height:1.15">Built for Bangladesh, not translated for it</h1>
+  <table style="width:100%;border-collapse:collapse;font-size:var(--type-small)">
+    <thead><tr><th style="text-align:left;padding:20px 24px;color:var(--gray-400);font-weight:600;border-bottom:2px solid var(--gray-200)"></th><th style="text-align:left;padding:20px 24px;color:var(--gray-400);font-weight:600;border-bottom:2px solid var(--gray-200)">Generic global CRMs</th><th style="text-align:left;padding:20px 24px;color:var(--violet-500);font-weight:700;border-bottom:2px solid var(--violet-500)">UnReal BS</th></tr></thead>
+    <tbody>
+      <tr><td style="padding:20px 24px;color:var(--gray-700);font-weight:600;border-bottom:1px solid var(--gray-100)">Interface language</td><td style="padding:20px 24px;color:var(--gray-500);border-bottom:1px solid var(--gray-100)">English-only</td><td style="padding:20px 24px;color:var(--indigo-950);font-weight:600;border-bottom:1px solid var(--gray-100)">Bangla-first, English toggle</td></tr>
+      <tr><td style="padding:20px 24px;color:var(--gray-700);font-weight:600;border-bottom:1px solid var(--gray-100)">Local payment rails</td><td style="padding:20px 24px;color:var(--gray-500);border-bottom:1px solid var(--gray-100)">Not supported</td><td style="padding:20px 24px;color:var(--indigo-950);font-weight:600;border-bottom:1px solid var(--gray-100)">bKash, Nagad, Rocket (in development)</td></tr>
+      <tr><td style="padding:20px 24px;color:var(--gray-700);font-weight:600;border-bottom:1px solid var(--gray-100)">Built-in AI assistant</td><td style="padding:20px 24px;color:var(--gray-500);border-bottom:1px solid var(--gray-100)">Bolt-on, English-only</td><td style="padding:20px 24px;color:var(--indigo-950);font-weight:600;border-bottom:1px solid var(--gray-100)">BhaiFreakin, native and Bangla-fluent</td></tr>
+      <tr><td style="padding:20px 24px;color:var(--gray-700);font-weight:600">Underlying infrastructure</td><td style="padding:20px 24px;color:var(--gray-500)">Proprietary, closed</td><td style="padding:20px 24px;color:var(--indigo-950);font-weight:600">Built on proven CRM infrastructure (GoHighLevel)</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<section data-label="Business Model" style="background:var(--violet-50);display:flex;flex-direction:column;padding:var(--pad-top) var(--pad-x) var(--pad-bottom);font-family:var(--font-sans)">
+  <h1 style="font-size:var(--type-title);font-weight:800;color:var(--indigo-950);margin:0 0 var(--gap-title);letter-spacing:-.02em;line-height:1.15">Revenue grows with the business, not against it</h1>
+  <div style="display:flex;gap:32px;margin-top:12px">
+    <div style="flex:1;background:#fff;border-radius:24px;padding:40px;box-shadow:var(--shadow-sm)"><p style="font-size:var(--type-subtitle);font-weight:800;color:var(--violet-500);margin:0 0 16px">1</p><p style="font-size:var(--type-small);font-weight:700;color:var(--indigo-950);margin:0 0 12px">Subscription tiers</p><p style="font-size:24px;color:var(--gray-600);margin:0;line-height:1.4">Monthly plans priced by feature access, from core CRM to the full automation suite.</p></div>
+    <div style="flex:1;background:#fff;border-radius:24px;padding:40px;box-shadow:var(--shadow-sm)"><p style="font-size:var(--type-subtitle);font-weight:800;color:var(--violet-500);margin:0 0 16px">2</p><p style="font-size:var(--type-small);font-weight:700;color:var(--indigo-950);margin:0 0 12px">Marketplace take rate</p><p style="font-size:24px;color:var(--gray-600);margin:0;line-height:1.4">A share of every ready-made agent, skill, and MCP integration installed.</p></div>
+    <div style="flex:1;background:#fff;border-radius:24px;padding:40px;box-shadow:var(--shadow-sm)"><p style="font-size:var(--type-subtitle);font-weight:800;color:var(--violet-500);margin:0 0 16px">3</p><p style="font-size:var(--type-small);font-weight:700;color:var(--indigo-950);margin:0 0 12px">Payments margin</p><p style="font-size:24px;color:var(--gray-600);margin:0;line-height:1.4">A processing margin on the UnReal Wallet once local & international payments launch.</p></div>
+  </div>
+</section>
+
+<section data-label="Roadmap" style="background:#fff;display:flex;flex-direction:column;padding:var(--pad-top) var(--pad-x) var(--pad-bottom);font-family:var(--font-sans)">
+  <h1 style="font-size:var(--type-title);font-weight:800;color:var(--indigo-950);margin:0 0 var(--gap-title);letter-spacing:-.02em;line-height:1.15">From CRM core to a full business ecosystem</h1>
+  <div style="display:flex;gap:32px;flex:1">
+    <div style="flex:1;border-top:6px solid var(--green-500);padding-top:28px"><p style="font-size:var(--type-small);font-weight:700;color:var(--success-strong);text-transform:uppercase;letter-spacing:.04em;margin:0 0 20px">Now</p><p style="font-size:26px;color:var(--gray-700);margin:0 0 14px;line-height:1.5">CRM, conversations & pipeline</p><p style="font-size:26px;color:var(--gray-700);margin:0 0 14px;line-height:1.5">Visual workflow automation</p><p style="font-size:26px;color:var(--gray-700);margin:0;line-height:1.5">BhaiFreakin & the Agentic HQ marketplace</p></div>
+    <div style="flex:1;border-top:6px solid var(--violet-500);padding-top:28px"><p style="font-size:var(--type-small);font-weight:700;color:var(--violet-500);text-transform:uppercase;letter-spacing:.04em;margin:0 0 20px">Next</p><p style="font-size:26px;color:var(--gray-700);margin:0 0 14px;line-height:1.5">UnReal Wallet — bKash, Nagad, Rocket</p><p style="font-size:26px;color:var(--gray-700);margin:0;line-height:1.5">International payment rails</p></div>
+    <div style="flex:1;border-top:6px solid var(--gray-300);padding-top:28px"><p style="font-size:var(--type-small);font-weight:700;color:var(--gray-500);text-transform:uppercase;letter-spacing:.04em;margin:0 0 20px">Later</p><p style="font-size:26px;color:var(--gray-700);margin:0 0 14px;line-height:1.5">Deeper agent & skill ecosystem</p><p style="font-size:26px;color:var(--gray-700);margin:0;line-height:1.5">Expansion beyond Bangladesh</p></div>
+  </div>
+</section>
+
+<section data-label="Team" style="background:linear-gradient(135deg,#0D0D1A 0%,#13132B 100%);display:flex;flex-direction:column;align-items:center;justify-content:center;font-family:var(--font-sans)">
+  <h1 style="font-size:var(--type-title);font-weight:800;color:#fff;margin:0 0 var(--gap-title);letter-spacing:-.02em;text-align:center">Led by a builder, not a committee</h1>
+  <p style="font-size:44px;font-weight:700;color:var(--violet-400);margin:0 0 12px">BhaiSazzaD</p>
+  <p style="font-size:var(--type-small);color:rgba(255,255,255,.55);margin:0 0 8px">Founder, LUBE — Lifting Up Bangladesh Enterprises</p>
+  <p style="font-size:24px;color:rgba(255,255,255,.35);margin:0">bhaisazzad.online</p>
+</section>
+
+<section data-label="The Ask" style="background:linear-gradient(135deg,#0D0D1A 0%,#13132B 55%,#1a0a35 100%);display:flex;flex-direction:column;padding:var(--pad-top) var(--pad-x) var(--pad-bottom);font-family:var(--font-sans)">
+  <h1 style="font-size:var(--type-title);font-weight:800;color:#fff;margin:0 0 24px;letter-spacing:-.02em;line-height:1.15">Raising a seed round to scale the platform</h1>
+  <p style="font-size:var(--type-subtitle);font-weight:700;color:var(--violet-400);margin:0 0 var(--gap-title)">Seed — <span style="color:rgba(255,255,255,.5)">$[ amount ]</span></p>
+  <div style="display:flex;gap:24px;margin-top:12px">
+    <div style="flex:1;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:24px;padding:32px"><p style="font-size:var(--type-small);font-weight:700;color:#fff;margin:0 0 8px">Product & Engineering</p><p style="font-size:24px;color:rgba(255,255,255,.5);margin:0;line-height:1.4">Ship UnReal Wallet and deepen the AI agent platform</p></div>
+    <div style="flex:1;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:24px;padding:32px"><p style="font-size:var(--type-small);font-weight:700;color:#fff;margin:0 0 8px">Market Expansion</p><p style="font-size:24px;color:rgba(255,255,255,.5);margin:0;line-height:1.4">Grow adoption among Bangladeshi SMEs</p></div>
+    <div style="flex:1;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:24px;padding:32px"><p style="font-size:var(--type-small);font-weight:700;color:#fff;margin:0 0 8px">Team</p><p style="font-size:24px;color:rgba(255,255,255,.5);margin:0;line-height:1.4">Key engineering and support hires</p></div>
+  </div>
+</section>
+
+<section data-label="Close" style="background:linear-gradient(135deg,#0D0D1A 0%,#13132B 60%,#1a0a35 100%);display:flex;flex-direction:column;align-items:center;justify-content:center;font-family:var(--font-sans)">
+  <img src="../../assets/logo.png" alt="UnReal BS" style="height:180px;width:auto;margin-bottom:44px" />
+  <h1 style="font-size:var(--type-subtitle);font-weight:800;color:#fff;margin:0 0 20px;text-align:center;max-width:1400px;line-height:1.3">Join us in building Bangladesh's business operating system</h1>
+  <p style="font-size:var(--type-small);color:rgba(255,255,255,.4);margin:48px 0 0">hello@unrealbs.com &nbsp;·&nbsp; bhaisazzad.online</p>
+</section>
+
+</x-import>
+</x-dc>
+</body>
+</html>

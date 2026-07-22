@@ -1,0 +1,241 @@
+'use client'
+
+import { useState, useRef, useEffect } from 'react'
+import { Send, Sparkles, Loader2, RotateCcw, Copy, Check } from 'lucide-react'
+import { cn } from '@/lib/utils'
+import { usePuterAI } from '@/hooks/usePuterAI'
+
+interface Message {
+  id: string
+  role: 'user' | 'assistant'
+  content: string
+  ts?: number
+}
+
+const QUICK_PROMPTS = [
+  { emoji: '📈', text: 'আমার ব্যবসার বিক্রয় বাড়ানোর উপায় বলুন' },
+  { emoji: '💬', text: 'কাস্টমার সার্ভিস স্ক্রিপ্ট লিখে দিন' },
+  { emoji: '📱', text: 'WhatsApp মার্কেটিং মেসেজ তৈরি করুন' },
+  { emoji: '🎯', text: 'আমার টার্গেট কাস্টমার কারা হতে পারে?' },
+  { emoji: '📋', text: 'একটি বিজনেস প্ল্যান আউটলাইন দিন' },
+  { emoji: '💰', text: 'প্রাইসিং স্ট্র্যাটেজি কী হওয়া উচিত?' },
+]
+
+const SYSTEM_PROMPT = `তুমি BhaiFreakin — একজন বাংলাদেশি উদ্যোক্তাদের জন্য AI ব্যবসায়িক পরামর্শদাতা।
+তুমি বাংলায় কথা বলো এবং বাংলাদেশের ব্যবসায়িক প্রেক্ষাপটে বাস্তব পরামর্শ দাও।
+তোমার পরামর্শ সহজ, কার্যকর এবং সরাসরি প্রয়োগযোগ্য হওয়া উচিত।
+ইমোজি ব্যবহার করো, কিন্তু পরিমিতভাবে।`
+
+function formatTime(ts: number) {
+  return new Date(ts).toLocaleTimeString('bn-BD', { hour: '2-digit', minute: '2-digit' })
+}
+
+export function AskAIShell() {
+  const [messages, setMessages] = useState<Message[]>([
+    {
+      id: '0',
+      role: 'assistant',
+      content: 'আমি BhaiFreakin AI 🚀\n\nআপনার ব্যবসায়িক যেকোনো প্রশ্ন করুন — মার্কেটিং, সেলস, কাস্টমার সার্ভিস, প্রাইসিং, যেকোনো বিষয়ে আমি সাহায্য করব। বাংলায় বা ইংরেজিতে, যেভাবে স্বাচ্ছন্দ্য বোধ করেন।',
+    },
+  ])
+  const [input, setInput] = useState('')
+  const [isTyping, setIsTyping] = useState(false)
+  const [copied, setCopied] = useState<string | null>(null)
+  const messagesEndRef = useRef<HTMLDivElement>(null)
+  const inputRef = useRef<HTMLTextAreaElement>(null)
+  const { isReady, sendMessage } = usePuterAI()
+
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+  }, [messages, isTyping])
+
+  async function handleSend(text?: string) {
+    const content = (text ?? input).trim()
+    if (!content || isTyping || !isReady) return
+
+    setMessages(prev => [...prev, { id: Date.now().toString(), role: 'user', content, ts: Date.now() }])
+    setInput('')
+    setIsTyping(true)
+
+    try {
+      const history = messages
+        .slice(-6)
+        .map(m => `${m.role === 'user' ? 'User' : 'BhaiFreakin'}: ${m.content}`)
+        .join('\n')
+      const prompt = history ? `${history}\nUser: ${content}` : content
+      const reply = await sendMessage(prompt, SYSTEM_PROMPT)
+      setMessages(prev => [...prev, {
+        id: (Date.now() + 1).toString(),
+        role: 'assistant',
+        content: reply,
+        ts: Date.now(),
+      }])
+    } catch {
+      setMessages(prev => [...prev, {
+        id: (Date.now() + 1).toString(),
+        role: 'assistant',
+        content: 'দুঃখিত, সাময়িক সমস্যা হয়েছে। আবার চেষ্টা করুন।',
+        ts: Date.now(),
+      }])
+    } finally {
+      setIsTyping(false)
+    }
+  }
+
+  function copyMessage(id: string, content: string) {
+    navigator.clipboard.writeText(content)
+    setCopied(id)
+    setTimeout(() => setCopied(null), 1500)
+  }
+
+  function clearChat() {
+    setMessages([{
+      id: Date.now().toString(),
+      role: 'assistant',
+      content: 'চ্যাট পরিষ্কার করা হয়েছে। নতুন প্রশ্ন করুন!',
+      ts: Date.now(),
+    }])
+  }
+
+  return (
+    <div className="flex flex-col h-[calc(100vh-64px)] bg-gray-50">
+      {/* Header */}
+      <div className="flex items-center justify-between px-4 py-3 bg-white border-b border-gray-200 flex-shrink-0">
+        <div className="flex items-center gap-3">
+          <div className="w-9 h-9 rounded-xl gradient-ai flex items-center justify-center bhaifreakin-glow">
+            <Sparkles className="w-4 h-4 text-white" />
+          </div>
+          <div>
+            <p className="font-bold text-gray-900 text-sm">BhaiFreakin AI</p>
+            <div className="flex items-center gap-1.5">
+              <span className={cn(
+                'w-1.5 h-1.5 rounded-full',
+                isReady ? 'bg-[#00C875] animate-pulse' : 'bg-gray-300'
+              )} />
+              <span className="text-xs text-gray-400">{isReady ? 'প্রস্তুত' : 'লোড হচ্ছে...'}</span>
+            </div>
+          </div>
+        </div>
+        <button
+          onClick={clearChat}
+          className="p-2 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
+          title="চ্যাট পরিষ্কার করুন"
+        >
+          <RotateCcw className="w-4 h-4" />
+        </button>
+      </div>
+
+      {/* Messages */}
+      <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
+        {messages.map(msg => (
+          <div key={msg.id} className={cn('flex gap-3', msg.role === 'user' ? 'justify-end' : 'justify-start')}>
+            {msg.role === 'assistant' && (
+              <div className="w-8 h-8 rounded-xl gradient-ai flex items-center justify-center flex-shrink-0 mt-0.5">
+                <Sparkles className="w-3.5 h-3.5 text-white" />
+              </div>
+            )}
+            <div className={cn('max-w-[78%] group')}>
+              <div className={cn(
+                'px-4 py-3 rounded-2xl text-sm leading-relaxed whitespace-pre-wrap',
+                msg.role === 'user'
+                  ? 'bg-[#7C3AED] text-white rounded-tr-sm'
+                  : 'bg-white border border-gray-200 text-gray-800 rounded-tl-sm shadow-sm'
+              )}>
+                {msg.content}
+              </div>
+              <div className={cn(
+                'flex items-center gap-2 mt-1',
+                msg.role === 'user' ? 'justify-end' : 'justify-start'
+              )}>
+                {msg.ts != null && (
+                  <span className="text-[10px] text-gray-400">{formatTime(msg.ts)}</span>
+                )}
+                {msg.role === 'assistant' && (
+                  <button
+                    onClick={() => copyMessage(msg.id, msg.content)}
+                    className="opacity-0 group-hover:opacity-100 transition-opacity p-0.5 rounded text-gray-400 hover:text-gray-600"
+                  >
+                    {copied === msg.id
+                      ? <Check className="w-3 h-3 text-green-500" />
+                      : <Copy className="w-3 h-3" />}
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        ))}
+
+        {isTyping && (
+          <div className="flex gap-3 justify-start">
+            <div className="w-8 h-8 rounded-xl gradient-ai flex items-center justify-center flex-shrink-0">
+              <Sparkles className="w-3.5 h-3.5 text-white" />
+            </div>
+            <div className="bg-white border border-gray-200 shadow-sm px-4 py-3 rounded-2xl rounded-tl-sm">
+              <div className="flex gap-1.5 items-center">
+                {[0, 1, 2].map(i => (
+                  <div key={i} className="w-2 h-2 bg-[#7C3AED] rounded-full animate-bounce"
+                    style={{ animationDelay: `${i * 0.15}s` }} />
+                ))}
+                <span className="text-xs text-gray-400 ml-1">লিখছি...</span>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Quick prompts — only show if just the welcome message */}
+        {messages.length === 1 && !isTyping && (
+          <div className="pt-2">
+            <p className="text-xs text-gray-400 text-center mb-3">দ্রুত শুরু করুন</p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              {QUICK_PROMPTS.map(p => (
+                <button
+                  key={p.text}
+                  onClick={() => handleSend(p.text)}
+                  disabled={!isReady}
+                  className="flex items-center gap-3 p-3 bg-white border border-gray-200 rounded-xl text-left text-sm text-gray-700 hover:border-[#7C3AED]/40 hover:bg-[#EDE9FE]/20 transition-colors disabled:opacity-50 group"
+                >
+                  <span className="text-lg flex-shrink-0">{p.emoji}</span>
+                  <span className="leading-snug text-xs">{p.text}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        <div ref={messagesEndRef} />
+      </div>
+
+      {/* Input */}
+      <div className="px-4 py-3 bg-white border-t border-gray-200 flex-shrink-0">
+        <div className="flex items-end gap-2 bg-gray-50 border border-gray-200 rounded-2xl px-3 py-2 focus-within:border-[#7C3AED] focus-within:ring-2 focus-within:ring-[#7C3AED]/10 transition-all">
+          <textarea
+            ref={inputRef}
+            value={input}
+            onChange={e => setInput(e.target.value)}
+            onKeyDown={e => {
+              if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend() }
+            }}
+            placeholder={isReady ? 'BhaiFreakin-কে জিজ্ঞেস করুন...' : 'AI লোড হচ্ছে...'}
+            disabled={!isReady}
+            rows={1}
+            className="flex-1 bg-transparent text-sm text-gray-800 placeholder:text-gray-400 resize-none focus:outline-none min-h-[36px] max-h-32 py-1.5 leading-relaxed disabled:opacity-50"
+          />
+          <div className="flex items-center gap-1.5 flex-shrink-0 pb-0.5">
+            <button
+              onClick={() => handleSend()}
+              disabled={!input.trim() || isTyping || !isReady}
+              className="w-9 h-9 rounded-xl bg-[#7C3AED] flex items-center justify-center hover:bg-[#6D28D9] disabled:opacity-40 transition-colors flex-shrink-0"
+            >
+              {isTyping
+                ? <Loader2 className="w-4 h-4 text-white animate-spin" />
+                : <Send className="w-4 h-4 text-white" />}
+            </button>
+          </div>
+        </div>
+        <p className="text-[10px] text-gray-400 text-center mt-2">
+          Shift+Enter নতুন লাইন · Enter পাঠান
+        </p>
+      </div>
+    </div>
+  )
+}
