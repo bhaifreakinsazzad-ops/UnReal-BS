@@ -46,7 +46,7 @@ export function Badge({ variant = 'gray', children, className, dot }: BadgeProps
   )
 }
 
-export function StatusBadge({ status, locale = 'bn' }: { status: 'active' | 'paused' | 'draft' | 'coming_soon', locale?: 'bn' | 'en' }) {
+export function StatusBadge({ status, locale = 'en' }: { status: 'active' | 'paused' | 'draft' | 'coming_soon', locale?: 'bn' | 'en' }) {
   const labels = {
     active: { bn: 'সক্রিয়', en: 'Active', variant: 'accent' as BadgeVariant },
     paused: { bn: 'বিরতি', en: 'Paused', variant: 'warning' as BadgeVariant },

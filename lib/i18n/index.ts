@@ -8,14 +8,14 @@ export type TranslationKeys = typeof bn
 
 const translations: Record<Locale, TranslationKeys> = { bn, en }
 
-export function getTranslations(locale: Locale = 'bn'): TranslationKeys {
-  return translations[locale] ?? translations.bn
+export function getTranslations(locale: Locale = 'en'): TranslationKeys {
+  return translations[locale] ?? translations.en
 }
 
 export function getLocale(): Locale {
-  if (typeof window === 'undefined') return 'bn'
+  if (typeof window === 'undefined') return 'en'
   const stored = localStorage.getItem('unrealbs-locale') as Locale | null
-  return stored === 'en' ? 'en' : 'bn'
+  return stored === 'bn' ? 'bn' : 'en'
 }
 
 export function setLocale(locale: Locale): void {
@@ -29,7 +29,7 @@ export function formatNumber(n: number, locale: Locale): string {
 }
 
 export function formatDate(dateStr: string, locale: Locale): string {
-  return new Date(dateStr).toLocaleDateString(locale === 'en' ? 'en-GB' : 'bn-BD', {
+  return new Date(dateStr).toLocaleDateString(locale === 'bn' ? 'bn-BD' : 'en-GB', {
     day: '2-digit',
     month: 'short',
     year: 'numeric',

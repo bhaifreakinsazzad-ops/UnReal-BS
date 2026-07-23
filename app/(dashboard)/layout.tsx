@@ -10,14 +10,14 @@ import { LocaleProvider } from '@/lib/i18n/context'
 import type { Locale } from '@/lib/i18n'
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
-  const [locale, setLocale] = useState<Locale>('bn')
+  const [locale, setLocale] = useState<Locale>('en')
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 
   useEffect(() => {
     // Deferred to after mount so the client's first render matches the server's (no localStorage on the server).
     const stored = localStorage.getItem('unrealbs-locale') as Locale | null
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    if (stored === 'en') setLocale('en')
+    if (stored === 'bn') setLocale('bn')
   }, [])
 
   const toggleLocale = () => {

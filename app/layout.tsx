@@ -30,9 +30,9 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "UnReal BS — Business System",
-  description: "বাংলাদেশের ব্যবসার জন্য সর্বোচ্চ ব্যবসায়িক সিস্টেম",
-  keywords: ["CRM", "business", "Bangladesh", "ব্যবসা", "automation"],
+  title: "UnReal BS - Business Systems",
+  description: "English-first AI business operating system for CRM, automations, conversations, sites, and agents.",
+  keywords: ["CRM", "business", "Bangladesh", "automation", "AI agents"],
 };
 
 export default function RootLayout({
@@ -42,7 +42,7 @@ export default function RootLayout({
 }>) {
   return (
     <html
-      lang="bn"
+      lang="en"
       className={`${inter.variable} ${hindSiliguri.variable} ${notoSerifBengali.variable} ${jetbrainsMono.variable} h-full`}
     >
       <body className="h-full antialiased">

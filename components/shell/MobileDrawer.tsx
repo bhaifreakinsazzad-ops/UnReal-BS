@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import Image from 'next/image'
 import { usePathname } from 'next/navigation'
 import { X, Settings } from 'lucide-react'
 import { navItems } from './nav-items'
@@ -12,7 +13,7 @@ interface MobileDrawerProps {
   locale?: 'bn' | 'en'
 }
 
-export function MobileDrawer({ open, onClose, locale = 'bn' }: MobileDrawerProps) {
+export function MobileDrawer({ open, onClose, locale = 'en' }: MobileDrawerProps) {
   const pathname = usePathname()
   const isActive = (href: string) =>
     href === '/' ? pathname === '/' : pathname.startsWith(href)
@@ -34,9 +35,7 @@ export function MobileDrawer({ open, onClose, locale = 'bn' }: MobileDrawerProps
         {/* Header */}
         <div className="flex items-center justify-between h-16 px-4 border-b border-white/5">
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg gradient-primary flex items-center justify-center">
-              <span className="text-white font-black text-sm">U</span>
-            </div>
+            <Image src="/logo.png" alt="UnReal BS" width={32} height={32} className="h-8 w-8 rounded-lg object-contain" />
             <span className="font-bold text-white text-lg tracking-tight">
               UnReal <span className="text-[#7C3AED]">BS</span>
             </span>

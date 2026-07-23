@@ -17,7 +17,7 @@ const primaryItems = [
   { href: '/workflows', labelBn: 'ওয়ার্কফ্লো', labelEn: 'Flows', icon: Zap },
 ]
 
-export function MobileBottomNav({ locale = 'bn' }: MobileBottomNavProps) {
+export function MobileBottomNav({ locale = 'en' }: MobileBottomNavProps) {
   const pathname = usePathname()
 
   const isActive = (href: string) =>

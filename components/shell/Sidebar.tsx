@@ -12,7 +12,7 @@ interface SidebarProps {
   locale?: 'bn' | 'en'
 }
 
-export function Sidebar({ locale = 'bn' }: SidebarProps) {
+export function Sidebar({ locale = 'en' }: SidebarProps) {
   const [collapsed, setCollapsed] = useState(false)
   const pathname = usePathname()
 

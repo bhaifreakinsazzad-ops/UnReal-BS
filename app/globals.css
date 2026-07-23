@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
 /* ============================================
-   UnReal BS — Design System Tokens (Tailwind v4)
+   UnReal BS - Design System Tokens (Tailwind v4)
    ============================================ */
 
 @theme {
@@ -74,7 +74,7 @@
   --mobilenav-height: 64px;
   --content-max: 1280px;
 
-  /* Fonts — set by next/font via CSS variables */
+  /* Fonts - set by next/font via CSS variables */
   --font-bengali: var(--font-hind-siliguri);
   --font-bengali-serif: var(--font-noto-serif-bengali);
   --font-sans: var(--font-inter);
@@ -185,7 +185,7 @@ html {
 body {
   background-color: var(--color-bg-muted);
   color: var(--color-text-primary);
-  font-family: var(--font-bengali), var(--font-sans), sans-serif;
+  font-family: var(--font-sans), var(--font-bengali), sans-serif;
   font-size: var(--font-size-base);
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;

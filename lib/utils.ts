@@ -13,7 +13,7 @@ export function formatCurrency(amount: number, currency = 'BDT'): string {
   }).format(amount)
 }
 
-export function formatDate(date: Date | string, locale: 'bn' | 'en' = 'bn'): string {
+export function formatDate(date: Date | string, locale: 'bn' | 'en' = 'en'): string {
   const d = typeof date === 'string' ? new Date(date) : date
   return new Intl.DateTimeFormat(locale === 'bn' ? 'bn-BD' : 'en-BD', {
     year: 'numeric',

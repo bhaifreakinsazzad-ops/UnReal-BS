@@ -1,6 +1,6 @@
 'use client'
 
-import { Bell, Globe, Search, ChevronDown, Menu } from 'lucide-react'
+import { Bell, Globe, Search, ChevronDown, Menu, Gift } from 'lucide-react'
 import { useState } from 'react'
 
 interface TopNavProps {
@@ -45,14 +45,23 @@ export function TopNav({ locale, onLocaleToggle, onMenuToggle, pageTitle }: TopN
       </div>
 
       <div className="flex items-center gap-2 ml-auto">
+        <button
+          className="hidden sm:flex items-center justify-center p-2 rounded-lg text-gray-500 hover:text-gray-900 hover:bg-gray-100 transition-colors"
+          aria-label={locale === 'bn' ? 'নতুন আপডেট' : 'Product updates'}
+        >
+          <Gift className="w-5 h-5" />
+        </button>
+
         {/* Language Toggle */}
         <button
           onClick={onLocaleToggle}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-100 transition-colors border border-gray-200"
+          className="flex items-center gap-1.5 px-2 py-1.5 rounded-lg text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-100 transition-colors border border-gray-200"
           aria-label="Toggle language"
         >
           <Globe className="w-4 h-4" />
-          <span>{locale === 'bn' ? 'বাং' : 'EN'}</span>
+          <span className={locale === 'en' ? 'text-[#5B21B6] font-bold' : ''}>EN</span>
+          <span className="text-gray-300">/</span>
+          <span className={locale === 'bn' ? 'text-[#5B21B6] font-bold' : ''}>বাংলা</span>
         </button>
 
         {/* Notifications */}
@@ -80,7 +89,7 @@ export function TopNav({ locale, onLocaleToggle, onMenuToggle, pageTitle }: TopN
                 {mockNotifications.map((n) => (
                   <div key={n.id} className="px-4 py-3 hover:bg-gray-50 cursor-pointer">
                     <p className="text-sm text-gray-800">{locale === 'bn' ? n.textBn : n.textEn}</p>
-                    <p className="text-xs text-gray-400 mt-0.5">{n.time}</p>
+                    <p className="text-xs text-gray-400 mt-0.5">{locale === 'bn' ? n.timeBn : n.timeEn}</p>
                   </div>
                 ))}
               </div>
@@ -95,11 +104,11 @@ export function TopNav({ locale, onLocaleToggle, onMenuToggle, pageTitle }: TopN
             className="flex items-center gap-2 pl-2 pr-3 py-1.5 rounded-lg hover:bg-gray-100 transition-colors"
           >
             <div className="w-8 h-8 rounded-full gradient-primary flex items-center justify-center text-white text-sm font-bold">
-              ব
+              UB
             </div>
             <div className="hidden md:block text-left">
               <p className="text-sm font-medium text-gray-900 leading-none">
-                {locale === 'bn' ? 'আপনার নাম' : 'Your Name'}
+                {locale === 'bn' ? 'বিজনেস অপারেটর' : 'Business Operator'}
               </p>
               <p className="text-xs text-gray-400 mt-0.5">
                 {locale === 'bn' ? 'অ্যাডমিন' : 'Admin'}
@@ -141,7 +150,7 @@ export function TopNav({ locale, onLocaleToggle, onMenuToggle, pageTitle }: TopN
 }
 
 const mockNotifications = [
-  { id: 1, textBn: 'নতুন লিড যোগ হয়েছে — আরিফুল ইসলাম', textEn: 'New lead added — Ariful Islam', time: '২ মিনিট আগে' },
-  { id: 2, textBn: 'ওয়ার্কফ্লো সফলভাবে চলেছে', textEn: 'Workflow ran successfully', time: '১ ঘণ্টা আগে' },
-  { id: 3, textBn: '৩টি নতুন মেসেজ এসেছে', textEn: '3 new messages received', time: 'আজ সকাল ১০টা' },
+  { id: 1, textBn: 'নতুন লিড যোগ হয়েছে — আরিফুল ইসলাম', textEn: 'New lead added - Ariful Islam', timeBn: '২ মিনিট আগে', timeEn: '2 min ago' },
+  { id: 2, textBn: 'ওয়ার্কফ্লো সফলভাবে চলেছে', textEn: 'Workflow ran successfully', timeBn: '১ ঘণ্টা আগে', timeEn: '1 hour ago' },
+  { id: 3, textBn: '৩টি নতুন মেসেজ এসেছে', textEn: '3 new messages received', timeBn: 'আজ সকাল ১০টা', timeEn: 'Today 10 AM' },
 ]
