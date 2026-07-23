@@ -79,7 +79,9 @@ function LoginForm() {
               <span className="text-xs font-bold uppercase tracking-[0.18em]">Secure Operator Login</span>
             </div>
             <h2 className="text-white font-bold text-xl mb-1">Sign in to your workspace</h2>
-            <p className="text-gray-400 text-sm">Use the configured admin account to access the business system.</p>
+            <p className="text-gray-400 text-sm">
+              Access is provisioned by the workspace owner. There is no public self-registration on this portal.
+            </p>
           </div>
 
           {error && (
@@ -132,7 +134,7 @@ function LoginForm() {
         </form>
 
         <p className="text-center text-xs text-gray-600 mt-6">
-          © 2026 UnReal BS - Powered by BhaiFreakin
+          Copyright 2026 UnReal BS - Powered by NotRealEngine, LLC
         </p>
       </div>
     </div>
