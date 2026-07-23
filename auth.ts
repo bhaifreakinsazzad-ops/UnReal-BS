@@ -2,6 +2,7 @@ import NextAuth from 'next-auth'
 import Credentials from 'next-auth/providers/credentials'
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
+  secret: process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET,
   providers: [
     Credentials({
       credentials: {
@@ -13,7 +14,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         const adminPassword = process.env.ADMIN_PASSWORD
 
         if (!adminEmail || !adminPassword) {
-          console.error('ADMIN_EMAIL / ADMIN_PASSWORD are not configured — rejecting all logins')
+          console.error('ADMIN_EMAIL / ADMIN_PASSWORD are not configured - rejecting all logins')
           return null
         }
 
