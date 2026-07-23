@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { auth } from '@/auth'
 
 const GHL_BASE_URL = 'https://services.leadconnectorhq.com'
 const GHL_TOKEN = process.env.GHL_PRIVATE_TOKEN
+const GHL_LOCATION_ID = process.env.GHL_LOCATION_ID
 
 export async function GET(
   request: NextRequest,
@@ -36,8 +38,16 @@ async function proxyRequest(
   paramsPromise: Promise<{ path: string[] }>,
   method: string
 ) {
+  const session = await auth()
+  if (!session?.user) {
+    return NextResponse.json({ error: 'Authentication required' }, { status: 401 })
+  }
+
   if (!GHL_TOKEN) {
     return NextResponse.json({ error: 'GHL token not configured' }, { status: 500 })
+  }
+  if (!GHL_LOCATION_ID) {
+    return NextResponse.json({ error: 'GHL location not configured' }, { status: 500 })
   }
 
   const { path } = await paramsPromise
@@ -45,13 +55,12 @@ async function proxyRequest(
   const searchParams = request.nextUrl.searchParams.toString()
   const url = `${GHL_BASE_URL}${pathname}${searchParams ? '?' + searchParams : ''}`
 
-  const locationId = request.headers.get('x-location-id')
   const headers: Record<string, string> = {
     'Authorization': `Bearer ${GHL_TOKEN}`,
     'Version': '2021-07-28',
     'Content-Type': 'application/json',
+    'Location': GHL_LOCATION_ID,
   }
-  if (locationId) headers['Location'] = locationId
 
   const body = method !== 'GET' && method !== 'DELETE'
     ? await request.text()
