@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import {
   BookOpen,
   Plus,
@@ -16,6 +16,8 @@ import {
   Clock,
   Send,
   UserPlus,
+  Camera,
+  Loader2,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -474,6 +476,9 @@ function AddCreditModal({ contacts, defaultContactId, onClose, onAdd }: {
   const [description, setDescription] = useState('')
   const [date, setDate] = useState(todayStr())
   const [dueDate, setDueDate] = useState(dateAfterDays(30))
+  const [scanning, setScanning] = useState(false)
+  const [scanError, setScanError] = useState<string | null>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   function submit() {
     if (!contactId || !amount || !description.trim()) return
@@ -481,8 +486,86 @@ function AddCreditModal({ contacts, defaultContactId, onClose, onAdd }: {
     onClose()
   }
 
+  async function handlePhotoSelected(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    e.target.value = ''
+    if (!file) return
+    if (!window.puter?.ai) {
+      setScanError('AI is still loading — try again in a moment or enter manually.')
+      return
+    }
+
+    setScanning(true)
+    setScanError(null)
+    try {
+      const ocrText = await window.puter.ai.img2txt(file)
+      const raw = await window.puter.ai.chat(
+        [
+          {
+            role: 'system',
+            content:
+              'You extract structured data from messy OCR text of a handwritten or printed Bangladeshi khata (credit ledger) entry. ' +
+              'The text may be in Bangla, English, or a mix, and may use Bangla numerals. ' +
+              'Reply with ONLY a JSON object like {"amount": 1500, "description": "short description"} — no other text. ' +
+              'Convert any Bangla numerals to standard digits. If no clear amount is found, use 0. If no clear description is found, use an empty string.',
+          },
+          { role: 'user', content: ocrText },
+        ],
+        { model: 'claude-sonnet-5' }
+      )
+
+      const text = typeof raw === 'string' ? raw : JSON.stringify(raw)
+      const match = text.match(/\{[\s\S]*\}/)
+      if (!match) throw new Error('No structured data found')
+      const parsed = JSON.parse(match[0]) as { amount?: number | string; description?: string }
+
+      const parsedAmount = Number(parsed.amount)
+      if (Number.isFinite(parsedAmount) && parsedAmount > 0) {
+        setAmount(String(parsedAmount))
+      }
+      if (parsed.description) {
+        setDescription(String(parsed.description))
+      }
+    } catch {
+      setScanError('Couldn’t read that image — try again or enter manually.')
+    } finally {
+      setScanning(false)
+    }
+  }
+
   return (
     <Modal title="উধার বিক্রি যোগ করুন" onClose={onClose}>
+      <div>
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*"
+          capture="environment"
+          className="hidden"
+          onChange={handlePhotoSelected}
+        />
+        <button
+          type="button"
+          onClick={() => fileInputRef.current?.click()}
+          disabled={scanning}
+          className="flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-[#7C3AED]/40 bg-[#EDE9FE]/30 py-2.5 text-sm font-medium text-[#7C3AED] transition-colors hover:bg-[#EDE9FE]/60 disabled:opacity-60"
+        >
+          {scanning ? (
+            <>
+              <Loader2 className="h-4 w-4 animate-spin" />
+              ছবি পড়া হচ্ছে...
+            </>
+          ) : (
+            <>
+              <Camera className="h-4 w-4" />
+              📷 Scan a photo instead
+            </>
+          )}
+        </button>
+        {scanError && (
+          <p className="mt-1.5 text-xs text-red-500">{scanError}</p>
+        )}
+      </div>
       <div>
         <label className="block text-xs font-medium text-gray-600 mb-1.5">গ্রাহক বেছে নিন *</label>
         <select

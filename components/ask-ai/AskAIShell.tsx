@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
-import { Send, Sparkles, Loader2, RotateCcw, Copy, Check } from 'lucide-react'
+import { Send, Sparkles, Loader2, RotateCcw, Copy, Check, Volume2, Square } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useLocale } from '@/lib/i18n/context'
 import { usePuterAI } from '@/hooks/usePuterAI'
@@ -58,9 +58,18 @@ export function AskAIShell() {
   const [input, setInput] = useState('')
   const [isTyping, setIsTyping] = useState(false)
   const [copied, setCopied] = useState<string | null>(null)
+  const [speakingId, setSpeakingId] = useState<string | null>(null)
+  const [synthesizingId, setSynthesizingId] = useState<string | null>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
+  const audioRef = useRef<HTMLAudioElement | null>(null)
   const { isReady, sendMessage } = usePuterAI()
+
+  useEffect(() => {
+    return () => {
+      audioRef.current?.pause()
+    }
+  }, [])
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -98,6 +107,39 @@ export function AskAIShell() {
     navigator.clipboard.writeText(content)
     setCopied(id)
     setTimeout(() => setCopied(null), 1500)
+  }
+
+  async function speakMessage(id: string, content: string) {
+    // Clicking again while this message is playing/loading stops it.
+    if (speakingId === id || synthesizingId === id) {
+      audioRef.current?.pause()
+      audioRef.current = null
+      setSpeakingId(null)
+      setSynthesizingId(null)
+      return
+    }
+
+    // Switching to a different message stops whatever was playing.
+    audioRef.current?.pause()
+    audioRef.current = null
+    setSpeakingId(null)
+
+    if (!window.puter?.ai) return
+    setSynthesizingId(id)
+    try {
+      const audio = await window.puter.ai.txt2speech(content)
+      audioRef.current = audio
+      setSynthesizingId(null)
+      setSpeakingId(id)
+      audio.onended = () => {
+        setSpeakingId(null)
+        audioRef.current = null
+      }
+      await audio.play()
+    } catch {
+      setSynthesizingId(null)
+      setSpeakingId(null)
+    }
   }
 
   function clearChat() {
@@ -139,9 +181,27 @@ export function AskAIShell() {
               <div className={cn('flex items-center gap-2 mt-1', msg.role === 'user' ? 'justify-end' : 'justify-start')}>
                 {msg.ts != null && <span className="text-[10px] text-gray-400">{formatTime(msg.ts, locale)}</span>}
                 {msg.role === 'assistant' && (
-                  <button onClick={() => copyMessage(msg.id, msg.content)} className="opacity-0 group-hover:opacity-100 transition-opacity p-0.5 rounded text-gray-400 hover:text-gray-600" aria-label="Copy response">
-                    {copied === msg.id ? <Check className="w-3 h-3 text-green-500" /> : <Copy className="w-3 h-3" />}
-                  </button>
+                  <>
+                    <button onClick={() => copyMessage(msg.id, msg.content)} className="opacity-0 group-hover:opacity-100 transition-opacity p-0.5 rounded text-gray-400 hover:text-gray-600" aria-label="Copy response">
+                      {copied === msg.id ? <Check className="w-3 h-3 text-green-500" /> : <Copy className="w-3 h-3" />}
+                    </button>
+                    <button
+                      onClick={() => speakMessage(msg.id, msg.content)}
+                      className={cn(
+                        'transition-opacity p-0.5 rounded text-gray-400 hover:text-gray-600',
+                        speakingId === msg.id || synthesizingId === msg.id ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
+                      )}
+                      aria-label={speakingId === msg.id ? 'Stop reading aloud' : 'Read aloud'}
+                    >
+                      {synthesizingId === msg.id ? (
+                        <Loader2 className="w-3 h-3 animate-spin" />
+                      ) : speakingId === msg.id ? (
+                        <Square className="w-3 h-3 text-[#7C3AED]" />
+                      ) : (
+                        <Volume2 className="w-3 h-3" />
+                      )}
+                    </button>
+                  </>
                 )}
               </div>
             </div>

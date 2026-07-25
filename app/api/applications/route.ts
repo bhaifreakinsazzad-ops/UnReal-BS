@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server'
 import { z } from 'zod'
 import { addContactTags, upsertContact } from '@/lib/ghl/contacts'
+import { checkRateLimit } from '@/lib/rate-limit'
+import { logError } from '@/lib/log-error'
 
 const LOCATION_ID = process.env.GHL_LOCATION_ID
 
@@ -21,6 +23,10 @@ const schema = z.object({
   intent: z.string().trim().optional().or(z.literal('')),
   service: z.string().trim().optional().or(z.literal('')),
   campaignKeyword: z.string().trim().optional().or(z.literal('')),
+  // Honeypot: real users never see or fill this field (positioned off-screen,
+  // not display:none, so simple bots that skip display:none checks still
+  // fall for it). If it's filled, we quietly no-op the GHL upsert below.
+  website: z.string().max(0).optional().or(z.literal('')),
 })
 
 export async function POST(request: Request) {
@@ -28,6 +34,15 @@ export async function POST(request: Request) {
     return NextResponse.json(
       { message: 'Application intake is temporarily unavailable. Please try again later.' },
       { status: 503 }
+    )
+  }
+
+  const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? 'unknown'
+  const { allowed } = await checkRateLimit('applications', ip, { max: 5, windowSeconds: 3600 })
+  if (!allowed) {
+    return NextResponse.json(
+      { message: 'Too many applications submitted. Please try again later.' },
+      { status: 429 }
     )
   }
 
@@ -50,6 +65,14 @@ export async function POST(request: Request) {
   }
 
   const application = parsed.data
+
+  // Honeypot tripped — pretend success without touching GHL, so the bot
+  // doesn't learn it was caught.
+  if (application.website) {
+    return NextResponse.json({
+      message: 'Application received. Our team will verify eligibility.',
+    })
+  }
   const tags = [
     'UNREAL-BS-APPLICANT',
     'ELIGIBILITY-PENDING',
@@ -86,7 +109,8 @@ export async function POST(request: Request) {
       message: 'Application received. Our team will verify eligibility.',
       contactId,
     })
-  } catch {
+  } catch (err) {
+    await logError('applications-route', err, { businessName: application.businessName })
     return NextResponse.json(
       { message: 'Application could not be submitted right now. Please contact the team or try again later.' },
       { status: 502 }

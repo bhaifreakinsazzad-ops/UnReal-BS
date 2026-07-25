@@ -3,6 +3,7 @@ import { z } from 'zod'
 import { auth } from '@/auth'
 import { getSupabaseAdmin, isSupabaseConfigured } from '@/lib/supabase/client'
 import { resolveUserIdByEmail } from '@/lib/supabase/user'
+import { logError } from '@/lib/log-error'
 
 export const dynamic = 'force-dynamic'
 
@@ -77,7 +78,8 @@ export async function GET() {
       entries: entries.data ?? [],
       payments: payments.data ?? [],
     })
-  } catch {
+  } catch (err) {
+    await logError('udhar-khata-route-get', err, { userId })
     return NextResponse.json({ message: DB_NOT_READY_MESSAGE }, { status: 502 })
   }
 }
@@ -146,7 +148,8 @@ export async function POST(request: Request) {
       .single()
     if (error) return NextResponse.json({ message: DB_NOT_READY_MESSAGE }, { status: 502 })
     return NextResponse.json({ payment: data })
-  } catch {
+  } catch (err) {
+    await logError('udhar-khata-route-post', err, { userId })
     return NextResponse.json({ message: DB_NOT_READY_MESSAGE }, { status: 502 })
   }
 }

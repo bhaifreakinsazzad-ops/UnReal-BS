@@ -8,6 +8,7 @@ import {
   type CreateVoiceAgentInput,
 } from '@/lib/ghl/agent-studio'
 import { GHLRequestError } from '@/lib/ghl/client'
+import { logError } from '@/lib/log-error'
 
 export const dynamic = 'force-dynamic'
 
@@ -45,7 +46,8 @@ async function requireSession() {
   return Boolean(session?.user)
 }
 
-function handleGhlError(error: unknown) {
+async function handleGhlError(error: unknown) {
+  await logError('agent-studio-route', error)
   if (error instanceof GHLRequestError) {
     const message = error.status === 401 || error.status === 403
       ? 'The private integration does not have the required HighLevel scope for this action.'

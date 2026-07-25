@@ -131,6 +131,17 @@ export function EligibilityApplication({ intent, service }: EligibilityApplicati
                   <SelectField name="preferredContact" label="Preferred Contact" options={preferredContacts} defaultValue="WhatsApp" />
                 </div>
                 <input type="hidden" name="campaignKeyword" value="HIGH LEVEL" />
+                {/* Honeypot: hidden off-screen (not display:none) so simple
+                    bots that fill every visible-in-DOM field still trip it,
+                    while real users never see or reach it. */}
+                <input
+                  type="text"
+                  name="website"
+                  tabIndex={-1}
+                  autoComplete="off"
+                  aria-hidden="true"
+                  style={{ position: 'absolute', left: '-9999px', top: '-9999px', width: 1, height: 1, opacity: 0 }}
+                />
 
                 {message && (
                   <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">

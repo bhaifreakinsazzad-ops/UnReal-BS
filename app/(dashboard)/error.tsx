@@ -11,6 +11,17 @@ interface Props {
 export default function DashboardError({ error, reset }: Props) {
   useEffect(() => {
     console.error(error)
+    // lib/log-error.ts is server-only, so the client error boundary reports
+    // through a small API route instead of calling it directly.
+    fetch('/api/log-error', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        source: 'dashboard-error-boundary',
+        message: error.message || 'Unknown dashboard error',
+        digest: error.digest,
+      }),
+    }).catch(() => {})
   }, [error])
 
   return (

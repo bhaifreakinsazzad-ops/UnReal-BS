@@ -2,6 +2,7 @@ import NextAuth from 'next-auth'
 import Credentials from 'next-auth/providers/credentials'
 import bcrypt from 'bcryptjs'
 import { getSupabaseAdmin, isSupabaseConfigured } from '@/lib/supabase/client'
+import { checkRateLimit } from '@/lib/rate-limit'
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   secret: process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET,
@@ -16,6 +17,15 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         const password = typeof credentials?.password === 'string' ? credentials.password : undefined
 
         if (!email || !password) return null
+
+        // Rate-limit login attempts per email before touching the DB. On a
+        // hit we return null just like a bad password would — NextAuth shows
+        // a generic "invalid credentials" message either way, so this never
+        // leaks that the limiter (rather than a wrong password) is why the
+        // attempt failed, which would itself be an information-disclosure /
+        // account-enumeration risk.
+        const { allowed } = await checkRateLimit('login', email, { max: 10, windowSeconds: 900 })
+        if (!allowed) return null
 
         // Try real user accounts first. If Supabase isn't configured, the
         // migration hasn't been run yet, or the lookup errors for any other
