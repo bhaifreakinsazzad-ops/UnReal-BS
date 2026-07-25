@@ -10,6 +10,11 @@ export default auth((req) => {
 
   const isPublic =
     pathname.startsWith('/login') ||
+    pathname.startsWith('/unreal-bs') ||
+    pathname.startsWith('/apply') ||
+    pathname.startsWith('/terms') ||
+    pathname.startsWith('/privacy') ||
+    pathname.startsWith('/api/applications') ||
     pathname.startsWith('/api/auth') ||
     pathname.startsWith('/_next') ||
     pathname === '/favicon.ico' ||

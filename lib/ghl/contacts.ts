@@ -53,6 +53,7 @@ export async function getContact(contactId: string, locationId: string) {
 export async function createContact(locationId: string, data: {
   firstName?: string
   lastName?: string
+  companyName?: string
   email?: string
   phone?: string
   tags?: string[]
@@ -61,6 +62,22 @@ export async function createContact(locationId: string, data: {
   return ghlFetch<{ contact: GHLContact }>('/contacts/', {
     method: 'POST',
     locationId,
+    body: { ...data, locationId },
+  })
+}
+
+export async function upsertContact(locationId: string, data: {
+  firstName?: string
+  lastName?: string
+  companyName?: string
+  email?: string
+  phone?: string
+  source?: string
+}) {
+  return ghlFetch<{ contact: GHLContact }>('/contacts/upsert', {
+    method: 'POST',
+    locationId,
+    version: 'v3',
     body: { ...data, locationId },
   })
 }

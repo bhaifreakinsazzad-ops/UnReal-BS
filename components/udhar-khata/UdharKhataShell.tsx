@@ -122,60 +122,223 @@ function uid(): string {
   return Math.random().toString(36).slice(2, 10)
 }
 
-// ─── Storage hook ─────────────────────────────────────────────────────────────
+// ─── Server data mapping ────────────────────────────────────────────────────
+// The API persists a coarser shape than the in-memory model (payments are
+// scoped to a contact, not a specific entry — see supabase/migrations/
+// 0001_unreal_bs_core.sql). On load, payments fetched from the server are
+// reconciled against that contact's entries oldest-first (FIFO) to derive
+// per-entry paidAmount/status. Within a session, newly recorded payments keep
+// their precise entryId in local state (only contactId/amount/date are sent
+// to the server), so the UI stays accurate until the next reload.
+
+interface DbContactRow {
+  id: string
+  name: string
+  phone: string | null
+  area: string | null
+  created_at: string
+}
+
+interface DbEntryRow {
+  id: string
+  contact_id: string
+  amount: number | string
+  description: string | null
+  entry_date: string
+  due_date: string | null
+}
+
+interface DbPaymentRow {
+  id: string
+  contact_id: string
+  amount: number | string
+  paid_at: string
+}
+
+function mapContact(row: DbContactRow): CreditContact {
+  return { id: row.id, name: row.name, phone: row.phone ?? '', area: row.area ?? '', createdAt: row.created_at }
+}
+
+function mapEntryRaw(row: DbEntryRow): CreditEntry {
+  return {
+    id: row.id,
+    contactId: row.contact_id,
+    amount: Number(row.amount),
+    description: row.description ?? '',
+    date: row.entry_date,
+    dueDate: row.due_date ?? '',
+    paidAmount: 0,
+    status: 'pending',
+  }
+}
+
+function allocatePaymentsFifo(
+  entries: CreditEntry[],
+  rawPayments: { id: string; contactId: string; amount: number; date: string }[]
+): { entries: CreditEntry[]; payments: PaymentRecord[] } {
+  const entriesByContact = new Map<string, CreditEntry[]>()
+  for (const e of entries) {
+    if (!entriesByContact.has(e.contactId)) entriesByContact.set(e.contactId, [])
+    entriesByContact.get(e.contactId)!.push(e)
+  }
+  const paymentsByContact = new Map<string, typeof rawPayments>()
+  for (const p of rawPayments) {
+    if (!paymentsByContact.has(p.contactId)) paymentsByContact.set(p.contactId, [])
+    paymentsByContact.get(p.contactId)!.push(p)
+  }
+
+  const resultEntries: CreditEntry[] = []
+  const resultPayments: PaymentRecord[] = []
+
+  for (const [contactId, contactEntries] of entriesByContact) {
+    const sorted = [...contactEntries].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+    const remaining = new Map(sorted.map(e => [e.id, e.amount]))
+    const paid = new Map(sorted.map(e => [e.id, 0]))
+    const contactPays = [...(paymentsByContact.get(contactId) ?? [])].sort(
+      (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
+    )
+
+    for (const p of contactPays) {
+      let left = p.amount
+      let splitIndex = 0
+      for (const e of sorted) {
+        if (left <= 0) break
+        const rem = remaining.get(e.id) ?? 0
+        if (rem <= 0) continue
+        const applied = Math.min(rem, left)
+        remaining.set(e.id, rem - applied)
+        paid.set(e.id, (paid.get(e.id) ?? 0) + applied)
+        resultPayments.push({
+          id: splitIndex === 0 ? p.id : `${p.id}-${splitIndex}`,
+          entryId: e.id,
+          contactId,
+          amount: applied,
+          date: p.date,
+          note: '',
+        })
+        left -= applied
+        splitIndex++
+      }
+    }
+
+    for (const e of sorted) {
+      const pd = paid.get(e.id) ?? 0
+      const status: CreditEntry['status'] = pd >= e.amount ? 'paid' : pd > 0 ? 'partial' : 'pending'
+      resultEntries.push({ ...e, paidAmount: pd, status })
+    }
+  }
+
+  return { entries: resultEntries, payments: resultPayments }
+}
+
+// ─── Data hook ────────────────────────────────────────────────────────────────
 
 function useKhata() {
   const [contacts, setContacts] = useState<CreditContact[]>([])
   const [entries, setEntries] = useState<CreditEntry[]>([])
   const [payments, setPayments] = useState<PaymentRecord[]>([])
   const [loaded, setLoaded] = useState(false)
+  const [persistenceError, setPersistenceError] = useState(false)
 
   useEffect(() => {
-    // Deferred to after mount so the client's first render matches the server's (no localStorage on the server).
-    try {
-      const sc = localStorage.getItem('udhar_contacts')
-      const se = localStorage.getItem('udhar_entries')
-      const sp = localStorage.getItem('udhar_payments')
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setContacts(sc ? JSON.parse(sc) : SEED_CONTACTS)
-      setEntries(se ? JSON.parse(se) : SEED_ENTRIES)
-      setPayments(sp ? JSON.parse(sp) : SEED_PAYMENTS)
-    } catch {
-      setContacts(SEED_CONTACTS)
-      setEntries(SEED_ENTRIES)
-      setPayments(SEED_PAYMENTS)
+    let cancelled = false
+    async function load() {
+      try {
+        const res = await fetch('/api/udhar-khata')
+        if (!res.ok) throw new Error('request failed')
+        const json = (await res.json()) as { contacts: DbContactRow[]; entries: DbEntryRow[]; payments: DbPaymentRow[] }
+        if (cancelled) return
+
+        const mappedContacts = (json.contacts ?? []).map(mapContact)
+        const rawEntries = (json.entries ?? []).map(mapEntryRaw)
+        const rawPayments = (json.payments ?? []).map(row => ({
+          id: row.id,
+          contactId: row.contact_id,
+          amount: Number(row.amount),
+          date: row.paid_at,
+        }))
+        const { entries: derivedEntries, payments: derivedPayments } = allocatePaymentsFifo(rawEntries, rawPayments)
+
+        setContacts(mappedContacts)
+        setEntries(derivedEntries)
+        setPayments(derivedPayments)
+      } catch {
+        if (cancelled) return
+        setPersistenceError(true)
+        setContacts(SEED_CONTACTS)
+        setEntries(SEED_ENTRIES)
+        setPayments(SEED_PAYMENTS)
+      } finally {
+        if (!cancelled) setLoaded(true)
+      }
     }
-    setLoaded(true)
+    load()
+    return () => { cancelled = true }
   }, [])
 
-  const save = useCallback((c: CreditContact[], e: CreditEntry[], p: PaymentRecord[]) => {
-    localStorage.setItem('udhar_contacts', JSON.stringify(c))
-    localStorage.setItem('udhar_entries', JSON.stringify(e))
-    localStorage.setItem('udhar_payments', JSON.stringify(p))
+  const addContact = useCallback(async (c: Omit<CreditContact, 'id' | 'createdAt'>) => {
+    const optimistic: CreditContact = { ...c, id: uid(), createdAt: todayStr() }
+    setContacts(prev => [...prev, optimistic])
+    try {
+      const res = await fetch('/api/udhar-khata', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type: 'contact', data: { name: c.name, phone: c.phone, area: c.area } }),
+      })
+      if (!res.ok) throw new Error('request failed')
+      const json = (await res.json()) as { contact: DbContactRow }
+      setContacts(prev => prev.map(x => (x.id === optimistic.id ? mapContact(json.contact) : x)))
+    } catch {
+      setPersistenceError(true)
+    }
+    return optimistic
   }, [])
 
-  const addContact = (c: Omit<CreditContact, 'id' | 'createdAt'>) => {
-    const nc = [...contacts, { ...c, id: uid(), createdAt: todayStr() }]
-    setContacts(nc); save(nc, entries, payments)
-    return nc[nc.length - 1]
-  }
+  const addEntry = useCallback(async (e: Omit<CreditEntry, 'id' | 'paidAmount' | 'status'>) => {
+    const optimistic: CreditEntry = { ...e, id: uid(), paidAmount: 0, status: 'pending' }
+    setEntries(prev => [...prev, optimistic])
+    try {
+      const res = await fetch('/api/udhar-khata', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          type: 'entry',
+          data: { contactId: e.contactId, amount: e.amount, description: e.description, entryDate: e.date, dueDate: e.dueDate },
+        }),
+      })
+      if (!res.ok) throw new Error('request failed')
+      const json = (await res.json()) as { entry: DbEntryRow }
+      setEntries(prev => prev.map(x => (x.id === optimistic.id ? { ...mapEntryRaw(json.entry), paidAmount: 0, status: 'pending' } : x)))
+    } catch {
+      setPersistenceError(true)
+    }
+  }, [])
 
-  const addEntry = (e: Omit<CreditEntry, 'id' | 'paidAmount' | 'status'>) => {
-    const ne = [...entries, { ...e, id: uid(), paidAmount: 0, status: 'pending' as const }]
-    setEntries(ne); save(contacts, ne, payments)
-  }
-
-  const addPayment = (p: Omit<PaymentRecord, 'id'>) => {
-    const np = [...payments, { ...p, id: uid() }]
-    // update entry paid amount + status
-    const ne = entries.map(e => {
-      if (e.id !== p.entryId) return e
-      const paid = np.filter(x => x.entryId === e.id).reduce((s, x) => s + x.amount, 0)
-      const status: CreditEntry['status'] = paid >= e.amount ? 'paid' : paid > 0 ? 'partial' : 'pending'
-      return { ...e, paidAmount: paid, status }
+  const addPayment = useCallback(async (p: Omit<PaymentRecord, 'id'>) => {
+    const optimisticId = uid()
+    setPayments(prev => {
+      const np = [...prev, { ...p, id: optimisticId }]
+      setEntries(prevEntries => prevEntries.map(e => {
+        if (e.id !== p.entryId) return e
+        const paidAmount = np.filter(x => x.entryId === e.id).reduce((s, x) => s + x.amount, 0)
+        const status: CreditEntry['status'] = paidAmount >= e.amount ? 'paid' : paidAmount > 0 ? 'partial' : 'pending'
+        return { ...e, paidAmount, status }
+      }))
+      return np
     })
-    setPayments(np); setEntries(ne); save(contacts, ne, np)
-  }
+    try {
+      const res = await fetch('/api/udhar-khata', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type: 'payment', data: { contactId: p.contactId, amount: p.amount, paidAt: p.date } }),
+      })
+      if (!res.ok) throw new Error('request failed')
+      const json = (await res.json()) as { payment: DbPaymentRow }
+      setPayments(prev => prev.map(x => (x.id === optimisticId ? { ...x, id: json.payment.id } : x)))
+    } catch {
+      setPersistenceError(true)
+    }
+  }, [])
 
   // Derived per-contact totals
   const contactBalance = useCallback((contactId: string) => {
@@ -213,7 +376,7 @@ function useKhata() {
     return { totalReceivable, overdueAmount, collectedThisMonth, activeDebtors, overdueCount: overdue.length }
   }, [entries, payments])
 
-  return { contacts, entries, payments, loaded, addContact, addEntry, addPayment, contactBalance, ledgerForContact, stats }
+  return { contacts, entries, payments, loaded, persistenceError, addContact, addEntry, addPayment, contactBalance, ledgerForContact, stats }
 }
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
@@ -242,6 +405,15 @@ function InputField({ label, ...props }: { label: string } & React.InputHTMLAttr
         {...props}
         className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm text-gray-900 focus:outline-none focus:border-[#7C3AED] focus:ring-2 focus:ring-[#7C3AED]/10 transition-all placeholder:text-gray-300"
       />
+    </div>
+  )
+}
+
+function PersistenceBanner() {
+  return (
+    <div className="flex items-center gap-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+      <AlertTriangle className="w-4 h-4 flex-shrink-0" />
+      <span>ডেটা এখনো সংরক্ষণ হচ্ছে না — এই সেশনের পরে পরিবর্তনগুলো হারিয়ে যাবে।</span>
     </div>
   )
 }
@@ -588,7 +760,8 @@ export function UdharKhataShell() {
 
   if (selectedContact) {
     return (
-      <div className="p-4 md:p-6 max-w-2xl mx-auto">
+      <div className="p-4 md:p-6 max-w-2xl mx-auto space-y-4">
+        {khata.persistenceError && <PersistenceBanner />}
         <ContactLedger
           contact={selectedContact}
           ledger={ledger}
@@ -618,6 +791,7 @@ export function UdharKhataShell() {
 
   return (
     <div className="p-4 md:p-6 space-y-5">
+      {khata.persistenceError && <PersistenceBanner />}
       {/* Header */}
       <div className="flex items-start justify-between">
         <div>

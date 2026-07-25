@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { LayoutDashboard, MessageSquare, Users, Bot, Zap } from 'lucide-react'
+import { LayoutDashboard, MessageSquare, Users, HandCoins, BookOpen } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 interface MobileBottomNavProps {
@@ -10,11 +10,11 @@ interface MobileBottomNavProps {
 }
 
 const primaryItems = [
-  { href: '/', labelBn: 'ড্যাশবোর্ড', labelEn: 'Home', icon: LayoutDashboard },
-  { href: '/conversations', labelBn: 'মেসেজ', labelEn: 'Messages', icon: MessageSquare, badge: true },
-  { href: '/contacts', labelBn: 'কন্টাক্ট', labelEn: 'Contacts', icon: Users },
-  { href: '/agentic-hq', labelBn: 'এজেন্ট', labelEn: 'Agents', icon: Bot },
-  { href: '/workflows', labelBn: 'ওয়ার্কফ্লো', labelEn: 'Flows', icon: Zap },
+  { href: '/', labelBn: 'Control', labelEn: 'Control', icon: LayoutDashboard },
+  { href: '/opportunities', labelBn: 'Opps', labelEn: 'Opps', icon: HandCoins, badge: true },
+  { href: '/credit-center', labelBn: 'Credit', labelEn: 'Credit', icon: BookOpen },
+  { href: '/conversations', labelBn: 'Inbox', labelEn: 'Inbox', icon: MessageSquare },
+  { href: '/contacts', labelBn: 'Customers', labelEn: 'Customers', icon: Users },
 ]
 
 export function MobileBottomNav({ locale = 'en' }: MobileBottomNavProps) {

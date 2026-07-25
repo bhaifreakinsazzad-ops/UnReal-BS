@@ -1,7 +1,7 @@
-import { UdharKhataShell } from '@/components/udhar-khata/UdharKhataShell'
+import { redirect } from 'next/navigation'
 
-export const metadata = { title: 'উধার খাতা — UnReal BS' }
+export const metadata = { title: 'Credit Center - UNREAL BS' }
 
 export default function UdharKhataPage() {
-  return <UdharKhataShell />
+  redirect('/credit-center')
 }
