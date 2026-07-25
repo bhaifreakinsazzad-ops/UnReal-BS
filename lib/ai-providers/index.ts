@@ -7,6 +7,8 @@ import { moonshotProvider } from './moonshot'
 import { openrouterProvider } from './openrouter'
 import { cohereProvider } from './cohere'
 import { cerebrasProvider } from './cerebras'
+import { cloudflareProvider } from './cloudflare'
+import { huggingfaceProvider } from './huggingface'
 
 const providers: Record<string, AIProvider> = {
   openai: openaiProvider,
@@ -16,6 +18,8 @@ const providers: Record<string, AIProvider> = {
   openrouter: openrouterProvider,
   cohere: cohereProvider,
   cerebras: cerebrasProvider,
+  cloudflare: cloudflareProvider,
+  huggingface: huggingfaceProvider,
 }
 
 export function getProvider(name: string): AIProvider {

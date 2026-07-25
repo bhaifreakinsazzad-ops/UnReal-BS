@@ -14,20 +14,48 @@ export async function GET() {
 
   try {
     const supabase = getSupabaseAdmin()
+    const nowIso = new Date().toISOString()
+
+    // A model is selectable if it's active and not past its active_until
+    // date. A model past its active_until is replaced by its fallback_model
+    // (the fallback surfaces once the row it replaces expires, not before —
+    // so this is a real handoff, not a permanent duplicate in the list).
     const { data, error } = await supabase
       .from('unreal_bs_ai_model_rates')
-      .select('model_id, provider, display_name')
+      .select('id, model_id, provider, display_name, active_until, fallback_model_id')
       .eq('is_active', true)
-      .order('provider', { ascending: true })
-      .order('display_name', { ascending: true })
 
     if (error) return NextResponse.json({ message: DB_NOT_READY_MESSAGE }, { status: 502 })
 
-    const models = (data ?? []).map((row) => ({
-      id: row.model_id as string,
-      provider: row.provider as string,
-      displayName: row.display_name as string,
-    }))
+    const rows = data ?? []
+    const expiredFallbackIds = new Set(
+      rows
+        .filter((r) => r.active_until && r.active_until <= nowIso && r.fallback_model_id)
+        .map((r) => r.fallback_model_id as string)
+    )
+
+    const { data: fallbackRows, error: fallbackError } = expiredFallbackIds.size
+      ? await supabase
+          .from('unreal_bs_ai_model_rates')
+          .select('id, model_id, provider, display_name')
+          .in('id', Array.from(expiredFallbackIds))
+      : { data: [], error: null }
+
+    if (fallbackError) return NextResponse.json({ message: DB_NOT_READY_MESSAGE }, { status: 502 })
+
+    const visible = rows.filter((r) => !r.active_until || r.active_until > nowIso)
+    const byModelId = new Map<string, { id: string; model_id: string; provider: string; display_name: string }>()
+    for (const row of [...visible, ...(fallbackRows ?? [])]) {
+      byModelId.set(row.model_id, row)
+    }
+
+    const models = Array.from(byModelId.values())
+      .sort((a, b) => a.provider.localeCompare(b.provider) || a.display_name.localeCompare(b.display_name))
+      .map((row) => ({
+        id: row.model_id,
+        provider: row.provider,
+        displayName: row.display_name,
+      }))
 
     return NextResponse.json({ models })
   } catch (err) {

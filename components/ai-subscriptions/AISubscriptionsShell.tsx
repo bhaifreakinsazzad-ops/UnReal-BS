@@ -64,6 +64,9 @@ export function AISubscriptionsShell() {
   const [insufficientBalance, setInsufficientBalance] = useState(false)
   const [chatError, setChatError] = useState<string | null>(null)
 
+  const [searchAvailable, setSearchAvailable] = useState(false)
+  const [useSearch, setUseSearch] = useState(false)
+
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const topupSectionRef = useRef<HTMLDivElement>(null)
 
@@ -91,6 +94,15 @@ export function AISubscriptionsShell() {
       })
       .catch(() => {
         if (!cancelled) setModelsError(true)
+      })
+
+    fetch('/api/ai-subscriptions/capabilities')
+      .then((res) => (res.ok ? res.json() : Promise.reject(new Error('failed'))))
+      .then((json: { searchAvailable: boolean }) => {
+        if (!cancelled) setSearchAvailable(Boolean(json.searchAvailable))
+      })
+      .catch(() => {
+        // Silent — the toggle just stays hidden if capabilities can't load.
       })
 
     return () => {
@@ -123,6 +135,7 @@ export function AISubscriptionsShell() {
         body: JSON.stringify({
           modelId,
           messages: nextMessages.map((m) => ({ role: m.role, content: m.content })),
+          useSearch,
         }),
       })
 
@@ -288,6 +301,17 @@ export function AISubscriptionsShell() {
           </div>
 
           <div className="border-t border-gray-100 px-5 py-4">
+            {searchAvailable && (
+              <label className="mb-2 flex w-fit cursor-pointer items-center gap-2 text-xs font-medium text-gray-600">
+                <input
+                  type="checkbox"
+                  checked={useSearch}
+                  onChange={(e) => setUseSearch(e.target.checked)}
+                  className="h-3.5 w-3.5 rounded border-gray-300 text-[#7C3AED] focus:ring-[#7C3AED]/30"
+                />
+                🔍 Search the web for this
+              </label>
+            )}
             <div className="flex items-end gap-2 rounded-2xl border border-gray-200 bg-gray-50 px-3 py-2 transition-all focus-within:border-[#7C3AED] focus-within:ring-2 focus-within:ring-[#7C3AED]/10">
               <textarea
                 value={input}

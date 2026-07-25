@@ -5,6 +5,7 @@ import { getSupabaseAdmin, isSupabaseConfigured } from '@/lib/supabase/client'
 import { resolveUserIdByEmail } from '@/lib/supabase/user'
 import { checkRateLimit } from '@/lib/rate-limit'
 import { getProvider } from '@/lib/ai-providers'
+import { isTavilyConfigured, tavilySearch } from '@/lib/tools/tavily-search'
 import { logError } from '@/lib/log-error'
 
 export const dynamic = 'force-dynamic'
@@ -27,6 +28,10 @@ const chatSchema = z.object({
     )
     .min(1)
     .max(30),
+  // Optional — defaults to false so this stays a no-op for existing callers
+  // (this route is live in production). When true and Tavily is configured,
+  // the latest user message is used to search the web and ground the reply.
+  useSearch: z.boolean().optional().default(false),
 })
 
 function round2(n: number): number {
@@ -78,7 +83,7 @@ export async function POST(request: Request) {
         { status: 400 }
       )
     }
-    const { modelId, messages } = parsed.data
+    const { modelId, messages, useSearch } = parsed.data
 
     const supabase = getSupabaseAdmin()
 
@@ -91,6 +96,12 @@ export async function POST(request: Request) {
 
     if (rateError) return NextResponse.json({ message: DB_NOT_READY_MESSAGE }, { status: 502 })
     if (!rate) return NextResponse.json({ message: 'Unknown or inactive model.' }, { status: 400 })
+    if (rate.active_until && new Date(rate.active_until) <= new Date()) {
+      return NextResponse.json(
+        { message: 'This model is no longer available. Refresh the model list and pick another.' },
+        { status: 400 }
+      )
+    }
 
     const { data: wallet, error: walletError } = await supabase
       .from('unreal_bs_ai_wallets')
@@ -107,12 +118,48 @@ export async function POST(request: Request) {
       )
     }
 
+    // Optional web-search grounding. Best-effort only: any failure here
+    // (Tavily unconfigured or the call itself erroring) is logged and
+    // swallowed so a search hiccup never fails the whole chat request.
+    let searchContextMessage: { role: 'system'; content: string } | null = null
+    if (useSearch) {
+      if (!isTavilyConfigured()) {
+        await logError('ai-subscriptions-chat-tavily-unavailable', new Error('Tavily not configured'), {
+          userId,
+          modelId,
+        })
+      } else {
+        try {
+          const lastUserMessage = [...messages].reverse().find((m) => m.role === 'user')
+          if (lastUserMessage) {
+            const { results } = await tavilySearch(lastUserMessage.content)
+            const top = results.slice(0, 3)
+            if (top.length > 0) {
+              const summary = top
+                .map((r, i) => `[${i + 1}] ${r.title} (${r.url})\n${r.content}`)
+                .join('\n\n')
+              searchContextMessage = {
+                role: 'system',
+                content: `Web search results for context (use if relevant, cite sources by URL when you do):\n\n${summary}`,
+              }
+            }
+          }
+        } catch (err) {
+          await logError('ai-subscriptions-chat-tavily-search-failed', err, { userId, modelId })
+        }
+      }
+    }
+
     let providerResponse
     try {
       const provider = getProvider(rate.provider)
       providerResponse = await provider.chat({
         model: rate.model_id,
-        messages: [{ role: 'system', content: SYSTEM_PROMPT }, ...messages],
+        messages: [
+          { role: 'system', content: SYSTEM_PROMPT },
+          ...(searchContextMessage ? [searchContextMessage] : []),
+          ...messages,
+        ],
         maxTokens: 1024,
       })
     } catch (err) {
