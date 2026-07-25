@@ -11,7 +11,7 @@ import { logError } from '@/lib/log-error'
 export const dynamic = 'force-dynamic'
 
 const DB_NOT_READY_MESSAGE =
-  'Database not yet configured. Run the migration in supabase/migrations/0003_ai_subscriptions.sql.'
+  'Database not yet configured. Run the migration in supabase/migrations/0004_shared_wallet_and_virtual_cards.sql.'
 
 // Neutral, non-BhaiFreakin-branded system prompt — this is a "pick your
 // model" tool, not the free branded assistant.
@@ -104,7 +104,7 @@ export async function POST(request: Request) {
     }
 
     const { data: wallet, error: walletError } = await supabase
-      .from('unreal_bs_ai_wallets')
+      .from('unreal_bs_wallets')
       .select('balance_bdt')
       .eq('user_id', userId)
       .maybeSingle()

@@ -19,6 +19,8 @@ import {
   BriefcaseBusiness,
   LifeBuoy,
   Wallet,
+  MessagesSquare,
+  CreditCard,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 
@@ -60,7 +62,7 @@ export const navItems: NavItem[] = [
     labelBn: 'AI Subscriptions',
     labelEn: 'AI Subscriptions',
     href: '/ai-subscriptions',
-    icon: Wallet,
+    icon: MessagesSquare,
     badge: 'NEW',
   },
   {
@@ -179,6 +181,22 @@ export const navItems: NavItem[] = [
     href: '/ask-ai',
     icon: Sparkles,
     badge: 'AI',
+  },
+  {
+    key: 'wallet',
+    labelBn: 'Wallet',
+    labelEn: 'Wallet',
+    href: '/payments',
+    icon: Wallet,
+    badge: 'NEW',
+  },
+  {
+    key: 'virtual_cards',
+    labelBn: 'Virtual Cards',
+    labelEn: 'Virtual Cards',
+    href: '/virtual-cards',
+    icon: CreditCard,
+    badge: 'NEW',
   },
 ]
 

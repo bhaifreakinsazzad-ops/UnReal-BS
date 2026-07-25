@@ -29,6 +29,8 @@ async function requireUserId() {
   }
 }
 
+// Canonical shared wallet balance endpoint — used across AI subscriptions
+// and virtual card purchases, since both spend from the same balance.
 export async function GET() {
   const resolved = await requireUserId()
   if (resolved.error) return resolved.error
@@ -37,8 +39,6 @@ export async function GET() {
   try {
     const supabase = getSupabaseAdmin()
 
-    // Insert-if-missing without ever resetting an existing balance: look
-    // the row up first, only insert a zero-balance row when none exists.
     const { data: existing, error: selectError } = await supabase
       .from('unreal_bs_wallets')
       .select('balance_bdt, low_balance_threshold_bdt')
@@ -67,7 +67,7 @@ export async function GET() {
       lowBalanceThreshold: Number(created.low_balance_threshold_bdt),
     })
   } catch (err) {
-    await logError('ai-subscriptions-wallet-route-get', err, { userId })
+    await logError('wallet-route-get', err, { userId })
     return NextResponse.json({ message: DB_NOT_READY_MESSAGE }, { status: 502 })
   }
 }

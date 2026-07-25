@@ -11,8 +11,11 @@ export const dynamic = 'force-dynamic'
 const DB_NOT_READY_MESSAGE =
   'Database not yet configured. Run the migration in supabase/migrations/0004_shared_wallet_and_virtual_cards.sql.'
 
+const METHODS = ['bkash', 'nagad', 'rocket', 'upay', 'bank', 'cash', 'other'] as const
+
 const postSchema = z.object({
   amountBdt: z.number().positive().max(1_000_000),
+  method: z.enum(METHODS).optional(),
   note: z.string().trim().max(2000).optional().or(z.literal('')),
 })
 
@@ -36,12 +39,6 @@ async function requireUserId() {
   }
 }
 
-// Thin AI-subscriptions-scoped alias over the shared wallet deposit-request
-// flow — same underlying unreal_bs_deposit_requests table as
-// /api/wallet/deposit-request, kept as its own URL so AISubscriptionsShell
-// keeps working unchanged (there's no such thing as an "AI-only top-up"
-// anymore now that the wallet is shared, but the route name stays for
-// backwards compatibility with the existing frontend).
 export async function GET() {
   const resolved = await requireUserId()
   if (resolved.error) return resolved.error
@@ -52,7 +49,7 @@ export async function GET() {
     if (error) return NextResponse.json({ message: DB_NOT_READY_MESSAGE }, { status: 502 })
     return NextResponse.json({ request: data ?? null })
   } catch (err) {
-    await logError('ai-subscriptions-topup-request-route-get', err, { userId })
+    await logError('wallet-deposit-request-route-get', err, { userId })
     return NextResponse.json({ message: DB_NOT_READY_MESSAGE }, { status: 502 })
   }
 }
@@ -78,23 +75,21 @@ export async function POST(request: Request) {
   }
 
   try {
-    const result = await createDepositRequest(
-      userId,
-      email,
-      { amountBdt: parsed.data.amountBdt, note: parsed.data.note },
-      { tag: 'AI-TOPUP-REQUEST', source: 'UnReal BS AI Subscriptions — Top-up Request' }
-    )
+    const result = await createDepositRequest(userId, email, parsed.data, {
+      tag: 'WALLET-DEPOSIT-REQUEST',
+      source: 'UnReal BS Wallet — Deposit Request',
+    })
 
     if ('error' in result && result.error) {
       return NextResponse.json({ message: DB_NOT_READY_MESSAGE }, { status: 502 })
     }
     if ('pendingConflict' in result && result.pendingConflict) {
-      return NextResponse.json({ message: 'You already have a pending top-up request.' }, { status: 409 })
+      return NextResponse.json({ message: 'You already have a pending deposit request.' }, { status: 409 })
     }
 
     return NextResponse.json({ request: result.data })
   } catch (err) {
-    await logError('ai-subscriptions-topup-request-route-post', err, { userId })
+    await logError('wallet-deposit-request-route-post', err, { userId })
     return NextResponse.json({ message: DB_NOT_READY_MESSAGE }, { status: 502 })
   }
 }

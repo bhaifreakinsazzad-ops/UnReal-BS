@@ -1,12 +1,13 @@
 'use client'
 
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { AlertTriangle, Clock, Loader2, Send, Sparkles, Wallet } from 'lucide-react'
+import { AlertTriangle, Loader2, Send, Sparkles } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Card, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Input, Textarea } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
+import { WalletBalanceChip } from '@/components/wallet/WalletBalanceChip'
+import { DepositRequestCard } from '@/components/wallet/DepositRequestCard'
 
 // Metered, wallet-based chat against real provider models (OpenAI/Anthropic/
 // Google), proxied server-side via /api/ai-subscriptions/*. Intentionally
@@ -27,32 +28,9 @@ interface Message {
   ts: number
 }
 
-interface TopupRequest {
-  id: string
-  requested_amount_bdt: number
-  note: string | null
-  status: string
-  created_at: string
-}
-
-function formatBDT(value: number) {
-  return `৳${value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
-}
-
-function formatDateTime(iso: string) {
-  return new Date(iso).toLocaleString('en-US', {
-    day: 'numeric',
-    month: 'short',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  })
-}
-
 export function AISubscriptionsShell() {
   const [balance, setBalance] = useState<number | null>(null)
   const [lowBalanceThreshold, setLowBalanceThreshold] = useState<number>(50)
-  const [walletError, setWalletError] = useState(false)
 
   const [models, setModels] = useState<AIModel[]>([])
   const [modelId, setModelId] = useState<string>('')
@@ -72,17 +50,6 @@ export function AISubscriptionsShell() {
 
   useEffect(() => {
     let cancelled = false
-
-    fetch('/api/ai-subscriptions/wallet')
-      .then((res) => (res.ok ? res.json() : Promise.reject(new Error('failed'))))
-      .then((json: { balance: number; lowBalanceThreshold: number }) => {
-        if (cancelled) return
-        setBalance(json.balance)
-        setLowBalanceThreshold(json.lowBalanceThreshold)
-      })
-      .catch(() => {
-        if (!cancelled) setWalletError(true)
-      })
 
     fetch('/api/ai-subscriptions/models')
       .then((res) => (res.ok ? res.json() : Promise.reject(new Error('failed'))))
@@ -186,16 +153,12 @@ export function AISubscriptionsShell() {
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2">
-        <Card className="border-gray-200">
-          <div className="flex items-center gap-2">
-            <Wallet className="h-6 w-6 text-[#7C3AED]" />
-            <p className="text-sm font-bold text-gray-600">Wallet Balance</p>
-          </div>
-          <p className="mt-3 text-2xl font-black text-gray-950">
-            {walletError ? '—' : balance === null ? <Loader2 className="h-5 w-5 animate-spin text-gray-300" /> : formatBDT(balance)}
-          </p>
-          {walletError && <p className="mt-1 text-xs text-red-500">Could not load your wallet balance.</p>}
-        </Card>
+        <WalletBalanceChip
+          onLoad={(w) => {
+            setBalance(w.balance)
+            setLowBalanceThreshold(w.lowBalanceThreshold)
+          }}
+        />
         <Card className="border-gray-200">
           <p className="text-sm font-bold text-gray-600">Model</p>
           {modelsError ? (
@@ -344,123 +307,9 @@ export function AISubscriptionsShell() {
       </Card>
 
       <div ref={topupSectionRef}>
-        <TopupRequestCard />
+        <DepositRequestCard />
       </div>
     </div>
   )
 }
 
-function TopupRequestCard() {
-  const [request, setRequest] = useState<TopupRequest | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [amount, setAmount] = useState('')
-  const [note, setNote] = useState('')
-  const [submitting, setSubmitting] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-
-  useEffect(() => {
-    let cancelled = false
-    fetch('/api/ai-subscriptions/topup-request')
-      .then((res) => (res.ok ? res.json() : Promise.reject(new Error('failed'))))
-      .then((json: { request: TopupRequest | null }) => {
-        if (!cancelled) setRequest(json.request)
-      })
-      .catch(() => {
-        if (!cancelled) setError('Could not load your top-up request status.')
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false)
-      })
-    return () => {
-      cancelled = true
-    }
-  }, [])
-
-  async function submit() {
-    const amountBdt = Number(amount)
-    if (!amountBdt || amountBdt <= 0) {
-      setError('Enter a valid amount.')
-      return
-    }
-
-    setSubmitting(true)
-    setError(null)
-    try {
-      const res = await fetch('/api/ai-subscriptions/topup-request', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ amountBdt, note }),
-      })
-      const json = await res.json().catch(() => ({}))
-      if (!res.ok) {
-        throw new Error(json?.message ?? 'Could not submit top-up request.')
-      }
-      setRequest(json.request)
-      setAmount('')
-      setNote('')
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Could not submit top-up request.')
-    } finally {
-      setSubmitting(false)
-    }
-  }
-
-  const isPending = request?.status === 'pending'
-
-  return (
-    <Card className="border-gray-200">
-      <CardHeader className="mb-3">
-        <div className="flex items-center gap-2">
-          <Wallet className="h-5 w-5 text-[#7C3AED]" />
-          <CardTitle>Request a Top-up</CardTitle>
-        </div>
-      </CardHeader>
-      <p className="text-sm leading-6 text-gray-600">
-        Submit an amount and our team will confirm and credit your wallet balance.
-      </p>
-
-      <div className="mt-4">
-        {loading ? (
-          <div className="flex items-center gap-2 text-sm text-gray-400">
-            <Loader2 className="h-4 w-4 animate-spin" />
-            Loading request status...
-          </div>
-        ) : isPending && request ? (
-          <div className="flex items-center gap-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2.5 text-sm text-amber-800">
-            <Clock className="h-4 w-4 flex-shrink-0" />
-            <span>
-              Request pending since {formatDateTime(request.created_at)} — your team will confirm and credit your
-              balance shortly.
-            </span>
-          </div>
-        ) : (
-          <div className="space-y-3">
-            <Input
-              label="Amount (৳)"
-              type="number"
-              min={1}
-              placeholder="e.g. 1000"
-              value={amount}
-              onChange={(e) => setAmount(e.target.value)}
-            />
-            <Textarea
-              label="Note (optional)"
-              placeholder="Anything the team should know..."
-              rows={3}
-              value={note}
-              onChange={(e) => setNote(e.target.value)}
-            />
-            {error && (
-              <div className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-600">
-                {error}
-              </div>
-            )}
-            <Button onClick={submit} loading={submitting} disabled={submitting}>
-              Request Top-up
-            </Button>
-          </div>
-        )}
-      </div>
-    </Card>
-  )
-}

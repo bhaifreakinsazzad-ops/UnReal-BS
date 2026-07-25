@@ -29,6 +29,8 @@ async function requireUserId() {
   }
 }
 
+// Lists the current user's assigned cards. Masked fields only — the
+// encrypted credential column is never selected here.
 export async function GET() {
   const resolved = await requireUserId()
   if (resolved.error) return resolved.error
@@ -36,38 +38,28 @@ export async function GET() {
 
   try {
     const supabase = getSupabaseAdmin()
+    const { data, error } = await supabase
+      .from('unreal_bs_virtual_cards')
+      .select('id, label, card_brand, last4, expiry_month, expiry_year, status, credential_revealed_at')
+      .eq('assigned_user_id', userId)
+      .order('created_at', { ascending: false })
 
-    // Insert-if-missing without ever resetting an existing balance: look
-    // the row up first, only insert a zero-balance row when none exists.
-    const { data: existing, error: selectError } = await supabase
-      .from('unreal_bs_wallets')
-      .select('balance_bdt, low_balance_threshold_bdt')
-      .eq('user_id', userId)
-      .maybeSingle()
-
-    if (selectError) return NextResponse.json({ message: DB_NOT_READY_MESSAGE }, { status: 502 })
-
-    if (existing) {
-      return NextResponse.json({
-        balance: Number(existing.balance_bdt),
-        lowBalanceThreshold: Number(existing.low_balance_threshold_bdt),
-      })
-    }
-
-    const { data: created, error: insertError } = await supabase
-      .from('unreal_bs_wallets')
-      .insert({ user_id: userId, balance_bdt: 0 })
-      .select('balance_bdt, low_balance_threshold_bdt')
-      .single()
-
-    if (insertError) return NextResponse.json({ message: DB_NOT_READY_MESSAGE }, { status: 502 })
+    if (error) return NextResponse.json({ message: DB_NOT_READY_MESSAGE }, { status: 502 })
 
     return NextResponse.json({
-      balance: Number(created.balance_bdt),
-      lowBalanceThreshold: Number(created.low_balance_threshold_bdt),
+      cards: (data ?? []).map((c) => ({
+        id: c.id,
+        label: c.label,
+        cardBrand: c.card_brand,
+        last4: c.last4,
+        expiryMonth: c.expiry_month,
+        expiryYear: c.expiry_year,
+        status: c.status,
+        revealed: Boolean(c.credential_revealed_at),
+      })),
     })
   } catch (err) {
-    await logError('ai-subscriptions-wallet-route-get', err, { userId })
+    await logError('virtual-cards-route-get', err, { userId })
     return NextResponse.json({ message: DB_NOT_READY_MESSAGE }, { status: 502 })
   }
 }
