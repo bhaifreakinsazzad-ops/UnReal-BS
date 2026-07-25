@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { AlertTriangle, Building2, Clock, Loader2, ShieldCheck } from 'lucide-react'
+import { AlertTriangle, Building2, Clock, Loader2, ShieldCheck, Sparkles } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -19,6 +19,15 @@ interface UpgradeRequest {
   note: string | null
   status: string
   created_at: string
+}
+
+interface AIUsageByModel {
+  provider: string
+  modelId: string
+  calls: number
+  costBdt: number
+  inputTokens: number
+  outputTokens: number
 }
 
 function formatDateTime(iso: string) {
@@ -44,6 +53,7 @@ export function SettingsShell() {
 
       <UpgradeRequestCard />
       {/* Account upgrade request section above (Part 3); error monitoring below (Part 2). */}
+      <AIUsageSummaryCard />
       <ErrorLogsCard />
     </div>
   )
@@ -139,6 +149,101 @@ function UpgradeRequestCard() {
             <Button onClick={submit} loading={submitting} disabled={submitting}>
               Request Dedicated Account
             </Button>
+          </div>
+        )}
+      </div>
+    </Card>
+  )
+}
+
+function AIUsageSummaryCard() {
+  const [byModel, setByModel] = useState<AIUsageByModel[]>([])
+  const [totalCostBdt, setTotalCostBdt] = useState(0)
+  const [totalCalls, setTotalCalls] = useState(0)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(false)
+
+  useEffect(() => {
+    let cancelled = false
+    fetch('/api/settings/ai-usage-summary')
+      .then((res) => (res.ok ? res.json() : Promise.reject(new Error('failed'))))
+      .then((json: { byModel: AIUsageByModel[]; totalCostBdt: number; totalCalls: number }) => {
+        if (!cancelled) {
+          setByModel(json.byModel ?? [])
+          setTotalCostBdt(json.totalCostBdt ?? 0)
+          setTotalCalls(json.totalCalls ?? 0)
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setError(true)
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  return (
+    <Card padding="none" className="overflow-hidden border-gray-200">
+      <CardHeader className="border-b border-gray-100 px-5 py-4">
+        <div className="flex items-center gap-2">
+          <Sparkles className="h-5 w-5 text-[#7C3AED]" />
+          <CardTitle>AI Subscriptions Usage</CardTitle>
+        </div>
+        <Badge variant="gray">Last 30 days</Badge>
+      </CardHeader>
+
+      <div className="p-5">
+        {loading ? (
+          <div className="flex items-center gap-2 text-sm text-gray-400">
+            <Loader2 className="h-4 w-4 animate-spin" />
+            Loading...
+          </div>
+        ) : error ? (
+          <div className="flex items-center gap-2 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-600">
+            <AlertTriangle className="h-4 w-4 flex-shrink-0" />
+            Could not load usage summary.
+          </div>
+        ) : byModel.length === 0 ? (
+          <p className="text-sm text-gray-500">No AI usage in the last 30 days.</p>
+        ) : (
+          <div className="space-y-4">
+            <div className="flex flex-wrap items-center gap-4 rounded-xl bg-gray-50 px-4 py-3 text-sm">
+              <span className="text-gray-500">
+                Total spend: <span className="font-semibold text-gray-900">৳{totalCostBdt.toFixed(2)}</span>
+              </span>
+              <span className="text-gray-500">
+                Total calls: <span className="font-semibold text-gray-900">{totalCalls}</span>
+              </span>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[600px] text-left text-sm">
+                <thead className="text-xs uppercase tracking-wide text-gray-400">
+                  <tr>
+                    <th className="py-2 pr-4">Provider</th>
+                    <th className="py-2 pr-4">Model</th>
+                    <th className="py-2 pr-4">Calls</th>
+                    <th className="py-2 pr-4">Tokens (in/out)</th>
+                    <th className="py-2 pr-4">Cost</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {byModel.map((m) => (
+                    <tr key={`${m.provider}:${m.modelId}`}>
+                      <td className="py-2.5 pr-4 text-gray-800">{m.provider}</td>
+                      <td className="py-2.5 pr-4 font-mono text-xs text-gray-500">{m.modelId}</td>
+                      <td className="py-2.5 pr-4 text-gray-800">{m.calls}</td>
+                      <td className="py-2.5 pr-4 text-gray-500">
+                        {m.inputTokens.toLocaleString()} / {m.outputTokens.toLocaleString()}
+                      </td>
+                      <td className="py-2.5 pr-4 whitespace-nowrap text-gray-800">৳{m.costBdt.toFixed(2)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
         )}
       </div>
