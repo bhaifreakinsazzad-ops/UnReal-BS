@@ -18,6 +18,7 @@ import {
   HandCoins,
   BriefcaseBusiness,
   LifeBuoy,
+  Wallet,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 
@@ -53,6 +54,14 @@ export const navItems: NavItem[] = [
     labelEn: 'Credit Center',
     href: '/credit-center',
     icon: BookOpen,
+  },
+  {
+    key: 'ai_subscriptions',
+    labelBn: 'AI Subscriptions',
+    labelEn: 'AI Subscriptions',
+    href: '/ai-subscriptions',
+    icon: Wallet,
+    badge: 'NEW',
   },
   {
     key: 'conversations',
