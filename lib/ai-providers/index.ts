@@ -3,11 +3,13 @@ import type { AIProvider } from './types'
 import { openaiProvider } from './openai'
 import { anthropicProvider } from './anthropic'
 import { googleProvider } from './google'
+import { moonshotProvider } from './moonshot'
 
 const providers: Record<string, AIProvider> = {
   openai: openaiProvider,
   anthropic: anthropicProvider,
   google: googleProvider,
+  moonshot: moonshotProvider,
 }
 
 export function getProvider(name: string): AIProvider {
