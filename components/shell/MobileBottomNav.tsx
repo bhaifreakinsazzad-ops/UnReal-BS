@@ -11,8 +11,8 @@ interface MobileBottomNavProps {
 
 const primaryItems = [
   { href: '/', labelBn: 'Control', labelEn: 'Control', icon: LayoutDashboard },
-  { href: '/opportunities', labelBn: 'Opps', labelEn: 'Opps', icon: HandCoins, badge: true },
-  { href: '/credit-center', labelBn: 'Credit', labelEn: 'Credit', icon: BookOpen },
+  { href: '/opportunities', labelBn: 'Opps', labelEn: 'Opps', icon: HandCoins, comingSoon: true },
+  { href: '/credit-center', labelBn: 'Credit', labelEn: 'Credit', icon: BookOpen, comingSoon: true },
   { href: '/conversations', labelBn: 'Inbox', labelEn: 'Inbox', icon: MessageSquare },
   { href: '/contacts', labelBn: 'Customers', labelEn: 'Customers', icon: Users },
 ]
@@ -40,13 +40,15 @@ export function MobileBottomNav({ locale = 'en' }: MobileBottomNavProps) {
             >
               <div className="relative">
                 <Icon className={cn('w-5 h-5', active && 'text-[#7C3AED]')} />
-                {item.badge && (
-                  <span className="absolute -top-1 -right-1.5 w-2 h-2 bg-[#7C3AED] rounded-full pulse-dot" />
-                )}
               </div>
               <span className="text-[10px] font-medium leading-none">
                 {locale === 'bn' ? item.labelBn : item.labelEn}
               </span>
+              {item.comingSoon && (
+                <span className="text-[8px] font-semibold uppercase tracking-wide text-[#00C875] leading-none">
+                  {locale === 'bn' ? 'শীঘ্রই' : 'Soon'}
+                </span>
+              )}
               {active && (
                 <span className="absolute top-0 left-1/2 -translate-x-1/2 w-6 h-0.5 bg-[#7C3AED] rounded-full" />
               )}

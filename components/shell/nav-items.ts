@@ -48,7 +48,7 @@ export const navItems: NavItem[] = [
     labelEn: 'Opportunities',
     href: '/opportunities',
     icon: HandCoins,
-    badge: '3',
+    comingSoon: true,
   },
   {
     key: 'credit_center',
@@ -56,6 +56,7 @@ export const navItems: NavItem[] = [
     labelEn: 'Credit Center',
     href: '/credit-center',
     icon: BookOpen,
+    comingSoon: true,
   },
   {
     key: 'ai_subscriptions',

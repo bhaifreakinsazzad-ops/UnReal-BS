@@ -94,7 +94,7 @@ export function Sidebar({ locale = 'en' }: SidebarProps) {
               )}
               {!collapsed && item.comingSoon && (
                 <span className="text-[10px] text-[#00C875] font-semibold uppercase tracking-wide">
-                  {locale === 'bn' ? 'নতুন' : 'New'}
+                  {locale === 'bn' ? 'শীঘ্রই' : 'Soon'}
                 </span>
               )}
               {collapsed && item.badge && (
