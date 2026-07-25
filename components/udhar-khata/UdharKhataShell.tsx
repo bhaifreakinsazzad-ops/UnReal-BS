@@ -20,6 +20,7 @@ import {
   Loader2,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { useLocale } from '@/lib/i18n/context'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -59,7 +60,7 @@ interface LedgerEntry extends CreditEntry {
 
 type FilterTab = 'all' | 'overdue' | 'paid'
 
-// ─── Seed data ────────────────────────────────────────────────────────────────
+// ─── Seed data (demo fallback only, shown when persistence is unavailable) ────
 
 const SEED_CONTACTS: CreditContact[] = [
   { id: 'c1', name: 'মোঃ রাশেদুল ইসলাম', phone: '01712345678', area: 'মিরপুর, ঢাকা', createdAt: '2025-01-10' },
@@ -105,19 +106,19 @@ function daysOverdue(dueDate: string): number {
   return diff > 0 ? diff : 0
 }
 
-function fmtBDT(n: number): string {
-  return '৳' + n.toLocaleString('bn-BD')
+function fmtBDT(n: number, isBn: boolean): string {
+  return '৳' + n.toLocaleString(isBn ? 'bn-BD' : 'en-US')
 }
 
-function fmtDate(str: string): string {
-  return new Date(str).toLocaleDateString('bn-BD', { day: 'numeric', month: 'short', year: 'numeric' })
+function fmtDate(str: string, isBn: boolean): string {
+  return new Date(str).toLocaleDateString(isBn ? 'bn-BD' : 'en-US', { day: 'numeric', month: 'short', year: 'numeric' })
 }
 
-function agingLabel(days: number): { label: string; color: string; bg: string } {
-  if (days === 0) return { label: 'মেয়াদ আছে', color: '#00C875', bg: '#F0FDF9' }
-  if (days <= 30) return { label: `${days} দিন বাকি`, color: '#F59E0B', bg: '#FFFBEB' }
-  if (days <= 60) return { label: `${days} দিন বাকি`, color: '#EF4444', bg: '#FEF2F2' }
-  return { label: `${days} দিন! জরুরি`, color: '#DC2626', bg: '#FFF1F1' }
+function agingLabel(days: number, isBn: boolean): { label: string; color: string; bg: string } {
+  if (days === 0) return { label: isBn ? 'মেয়াদ আছে' : 'Not due', color: '#00C875', bg: '#F0FDF9' }
+  if (days <= 30) return { label: isBn ? `${days} দিন বাকি` : `${days}d overdue`, color: '#F59E0B', bg: '#FFFBEB' }
+  if (days <= 60) return { label: isBn ? `${days} দিন বাকি` : `${days}d overdue`, color: '#EF4444', bg: '#FEF2F2' }
+  return { label: isBn ? `${days} দিন! জরুরি` : `${days}d! Urgent`, color: '#DC2626', bg: '#FFF1F1' }
 }
 
 function uid(): string {
@@ -412,19 +413,25 @@ function InputField({ label, ...props }: { label: string } & React.InputHTMLAttr
 }
 
 function PersistenceBanner() {
+  const isBn = useLocale() === 'bn'
   return (
     <div className="flex items-center gap-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
       <AlertTriangle className="w-4 h-4 flex-shrink-0" />
-      <span>ডেটা এখনো সংরক্ষণ হচ্ছে না — এই সেশনের পরে পরিবর্তনগুলো হারিয়ে যাবে।</span>
+      <span>
+        {isBn
+          ? 'ডেটা এখনো সংরক্ষণ হচ্ছে না — এই সেশনের পরে পরিবর্তনগুলো হারিয়ে যাবে।'
+          : "Data isn't being saved yet — changes will be lost after this session."}
+      </span>
     </div>
   )
 }
 
 function StatusBadge({ status }: { status: CreditEntry['status'] }) {
+  const isBn = useLocale() === 'bn'
   const map = {
-    pending: { label: 'বাকি', bg: '#FEF2F2', color: '#EF4444' },
-    partial: { label: 'আংশিক', bg: '#FFFBEB', color: '#F59E0B' },
-    paid: { label: 'পরিশোধ', bg: '#F0FDF9', color: '#00C875' },
+    pending: { label: isBn ? 'বাকি' : 'Pending', bg: '#FEF2F2', color: '#EF4444' },
+    partial: { label: isBn ? 'আংশিক' : 'Partial', bg: '#FFFBEB', color: '#F59E0B' },
+    paid: { label: isBn ? 'পরিশোধ' : 'Paid', bg: '#F0FDF9', color: '#00C875' },
   }
   const s = map[status]
   return (
@@ -437,6 +444,7 @@ function StatusBadge({ status }: { status: CreditEntry['status'] }) {
 // ─── Add Contact Modal ─────────────────────────────────────────────────────────
 
 function AddContactModal({ onClose, onAdd }: { onClose: () => void; onAdd: (c: Omit<CreditContact, 'id' | 'createdAt'>) => void }) {
+  const isBn = useLocale() === 'bn'
   const [name, setName] = useState('')
   const [phone, setPhone] = useState('')
   const [area, setArea] = useState('')
@@ -448,16 +456,32 @@ function AddContactModal({ onClose, onAdd }: { onClose: () => void; onAdd: (c: O
   }
 
   return (
-    <Modal title="নতুন গ্রাহক যোগ করুন" onClose={onClose}>
-      <InputField label="গ্রাহকের নাম *" placeholder="মোঃ রাহিম উদ্দিন" value={name} onChange={e => setName(e.target.value)} />
-      <InputField label="মোবাইল নম্বর *" placeholder="017XXXXXXXX" value={phone} onChange={e => setPhone(e.target.value)} type="tel" />
-      <InputField label="এলাকা / ঠিকানা" placeholder="মিরপুর, ঢাকা" value={area} onChange={e => setArea(e.target.value)} />
+    <Modal title={isBn ? 'নতুন গ্রাহক যোগ করুন' : 'Add New Customer'} onClose={onClose}>
+      <InputField
+        label={isBn ? 'গ্রাহকের নাম *' : 'Customer name *'}
+        placeholder={isBn ? 'মোঃ রাহিম উদ্দিন' : 'e.g. Rahim Uddin'}
+        value={name}
+        onChange={e => setName(e.target.value)}
+      />
+      <InputField
+        label={isBn ? 'মোবাইল নম্বর *' : 'Mobile number *'}
+        placeholder="017XXXXXXXX"
+        value={phone}
+        onChange={e => setPhone(e.target.value)}
+        type="tel"
+      />
+      <InputField
+        label={isBn ? 'এলাকা / ঠিকানা' : 'Area / address'}
+        placeholder={isBn ? 'মিরপুর, ঢাকা' : 'e.g. Mirpur, Dhaka'}
+        value={area}
+        onChange={e => setArea(e.target.value)}
+      />
       <button
         onClick={submit}
         disabled={!name.trim() || !phone.trim()}
         className="w-full py-3 rounded-xl bg-[#7C3AED] text-white font-semibold text-sm hover:bg-[#6D28D9] transition-colors disabled:opacity-40"
       >
-        গ্রাহক যোগ করুন
+        {isBn ? 'গ্রাহক যোগ করুন' : 'Add Customer'}
       </button>
     </Modal>
   )
@@ -471,6 +495,7 @@ function AddCreditModal({ contacts, defaultContactId, onClose, onAdd }: {
   onClose: () => void
   onAdd: (e: Omit<CreditEntry, 'id' | 'paidAmount' | 'status'>) => void
 }) {
+  const isBn = useLocale() === 'bn'
   const [contactId, setContactId] = useState(defaultContactId ?? '')
   const [amount, setAmount] = useState('')
   const [description, setDescription] = useState('')
@@ -491,7 +516,7 @@ function AddCreditModal({ contacts, defaultContactId, onClose, onAdd }: {
     e.target.value = ''
     if (!file) return
     if (!window.puter?.ai) {
-      setScanError('AI is still loading — try again in a moment or enter manually.')
+      setScanError(isBn ? 'AI এখনো লোড হচ্ছে — একটু পর আবার চেষ্টা করুন বা ম্যানুয়ালি লিখুন।' : 'AI is still loading — try again in a moment or enter manually.')
       return
     }
 
@@ -527,14 +552,14 @@ function AddCreditModal({ contacts, defaultContactId, onClose, onAdd }: {
         setDescription(String(parsed.description))
       }
     } catch {
-      setScanError('Couldn’t read that image — try again or enter manually.')
+      setScanError(isBn ? 'ছবিটি পড়া যায়নি — আবার চেষ্টা করুন বা ম্যানুয়ালি লিখুন।' : "Couldn't read that image — try again or enter manually.")
     } finally {
       setScanning(false)
     }
   }
 
   return (
-    <Modal title="উধার বিক্রি যোগ করুন" onClose={onClose}>
+    <Modal title={isBn ? 'উধার বিক্রি যোগ করুন' : 'Add Credit Sale'} onClose={onClose}>
       <div>
         <input
           ref={fileInputRef}
@@ -553,12 +578,12 @@ function AddCreditModal({ contacts, defaultContactId, onClose, onAdd }: {
           {scanning ? (
             <>
               <Loader2 className="h-4 w-4 animate-spin" />
-              ছবি পড়া হচ্ছে...
+              {isBn ? 'ছবি পড়া হচ্ছে...' : 'Reading photo...'}
             </>
           ) : (
             <>
               <Camera className="h-4 w-4" />
-              📷 Scan a photo instead
+              {isBn ? '📷 ছবি স্ক্যান করুন' : '📷 Scan a photo instead'}
             </>
           )}
         </button>
@@ -567,28 +592,40 @@ function AddCreditModal({ contacts, defaultContactId, onClose, onAdd }: {
         )}
       </div>
       <div>
-        <label className="block text-xs font-medium text-gray-600 mb-1.5">গ্রাহক বেছে নিন *</label>
+        <label className="block text-xs font-medium text-gray-600 mb-1.5">{isBn ? 'গ্রাহক বেছে নিন *' : 'Select customer *'}</label>
         <select
           value={contactId}
           onChange={e => setContactId(e.target.value)}
           className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm text-gray-900 focus:outline-none focus:border-[#7C3AED] bg-white"
         >
-          <option value="">-- গ্রাহক নির্বাচন করুন --</option>
+          <option value="">{isBn ? '-- গ্রাহক নির্বাচন করুন --' : '-- Select a customer --'}</option>
           {contacts.map(c => <option key={c.id} value={c.id}>{c.name} — {c.phone}</option>)}
         </select>
       </div>
-      <InputField label="পণ্য / সেবার বিবরণ *" placeholder="পণ্য সরবরাহ — ব্যাচ নং ১" value={description} onChange={e => setDescription(e.target.value)} />
-      <InputField label="মোট টাকার পরিমাণ (৳) *" placeholder="5000" type="number" min="1" value={amount} onChange={e => setAmount(e.target.value)} />
+      <InputField
+        label={isBn ? 'পণ্য / সেবার বিবরণ *' : 'Product / service description *'}
+        placeholder={isBn ? 'পণ্য সরবরাহ — ব্যাচ নং ১' : 'e.g. Goods delivery — batch 1'}
+        value={description}
+        onChange={e => setDescription(e.target.value)}
+      />
+      <InputField
+        label={isBn ? 'মোট টাকার পরিমাণ (৳) *' : 'Total amount (৳) *'}
+        placeholder="5000"
+        type="number"
+        min="1"
+        value={amount}
+        onChange={e => setAmount(e.target.value)}
+      />
       <div className="grid grid-cols-2 gap-3">
-        <InputField label="বিক্রির তারিখ" type="date" value={date} onChange={e => setDate(e.target.value)} />
-        <InputField label="শেষ তারিখ (ডেডলাইন)" type="date" value={dueDate} onChange={e => setDueDate(e.target.value)} />
+        <InputField label={isBn ? 'বিক্রির তারিখ' : 'Sale date'} type="date" value={date} onChange={e => setDate(e.target.value)} />
+        <InputField label={isBn ? 'শেষ তারিখ (ডেডলাইন)' : 'Due date'} type="date" value={dueDate} onChange={e => setDueDate(e.target.value)} />
       </div>
       <button
         onClick={submit}
         disabled={!contactId || !amount || !description.trim()}
         className="w-full py-3 rounded-xl bg-[#7C3AED] text-white font-semibold text-sm hover:bg-[#6D28D9] transition-colors disabled:opacity-40"
       >
-        উধার রেকর্ড করুন
+        {isBn ? 'উধার রেকর্ড করুন' : 'Record Credit'}
       </button>
     </Modal>
   )
@@ -602,6 +639,7 @@ function RecordPaymentModal({ entry, contact, onClose, onPay }: {
   onClose: () => void
   onPay: (p: Omit<PaymentRecord, 'id'>) => void
 }) {
+  const isBn = useLocale() === 'bn'
   const [amount, setAmount] = useState(String(entry.balance))
   const [note, setNote] = useState('')
   const [date, setDate] = useState(todayStr())
@@ -614,34 +652,41 @@ function RecordPaymentModal({ entry, contact, onClose, onPay }: {
   }
 
   return (
-    <Modal title="পেমেন্ট রেকর্ড করুন" onClose={onClose}>
+    <Modal title={isBn ? 'পেমেন্ট রেকর্ড করুন' : 'Record Payment'} onClose={onClose}>
       <div className="bg-[#7C3AED]/5 rounded-xl p-3 space-y-1">
         <p className="text-xs text-gray-500">{contact.name} — {entry.description}</p>
-        <p className="text-sm font-bold text-[#7C3AED]">বাকি আছে: {fmtBDT(entry.balance)}</p>
+        <p className="text-sm font-bold text-[#7C3AED]">
+          {isBn ? 'বাকি আছে' : 'Outstanding'}: {fmtBDT(entry.balance, isBn)}
+        </p>
       </div>
       <InputField
-        label={`পেমেন্টের পরিমাণ (সর্বোচ্চ ${fmtBDT(entry.balance)})`}
+        label={isBn ? `পেমেন্টের পরিমাণ (সর্বোচ্চ ${fmtBDT(entry.balance, isBn)})` : `Payment amount (max ${fmtBDT(entry.balance, isBn)})`}
         type="number"
         min="1"
         max={entry.balance}
         value={amount}
         onChange={e => setAmount(e.target.value)}
       />
-      <InputField label="পেমেন্টের মাধ্যম / নোট" placeholder="নগদ / bKash / ব্যাংক" value={note} onChange={e => setNote(e.target.value)} />
-      <InputField label="পেমেন্টের তারিখ" type="date" value={date} onChange={e => setDate(e.target.value)} />
+      <InputField
+        label={isBn ? 'পেমেন্টের মাধ্যম / নোট' : 'Payment method / note'}
+        placeholder={isBn ? 'নগদ / bKash / ব্যাংক' : 'Cash / bKash / Bank'}
+        value={note}
+        onChange={e => setNote(e.target.value)}
+      />
+      <InputField label={isBn ? 'পেমেন্টের তারিখ' : 'Payment date'} type="date" value={date} onChange={e => setDate(e.target.value)} />
       <div className="flex gap-2">
         <button
           onClick={() => setAmount(String(entry.balance))}
           className="flex-1 py-2.5 rounded-xl border border-[#7C3AED] text-[#7C3AED] text-sm font-medium hover:bg-[#7C3AED]/5 transition-colors"
         >
-          সম্পূর্ণ পরিশোধ
+          {isBn ? 'সম্পূর্ণ পরিশোধ' : 'Full payment'}
         </button>
         <button
           onClick={submit}
           disabled={!amount || Number(amount) <= 0 || Number(amount) > entry.balance}
           className="flex-1 py-2.5 rounded-xl bg-[#00C875] text-white text-sm font-semibold hover:bg-[#00B068] transition-colors disabled:opacity-40"
         >
-          পেমেন্ট সেভ করুন
+          {isBn ? 'পেমেন্ট সেভ করুন' : 'Save Payment'}
         </button>
       </div>
     </Modal>
@@ -663,13 +708,14 @@ function ContactLedger({
   onAddCredit: () => void
   onRecordPayment: (e: LedgerEntry) => void
 }) {
+  const isBn = useLocale() === 'bn'
   const totalBalance = ledger.reduce((s, e) => s + e.balance, 0)
   const totalCredit = ledger.reduce((s, e) => s + e.amount, 0)
   const totalPaid = ledger.reduce((s, e) => s + e.paidAmount, 0)
   const hasOverdue = ledger.some(e => e.status !== 'paid' && e.daysOverdue > 0)
 
   const waMsg = encodeURIComponent(
-    `আসসালামুয়ালাইকুম ${contact.name},\n\nআপনার কাছে আমাদের মোট ${fmtBDT(totalBalance)} টাকা পাওনা আছে। অনুগ্রহ করে শীঘ্রই পরিশোধ করুন।\n\n— UnReal BS`
+    `আসসালামুয়ালাইকুম ${contact.name},\n\nআপনার কাছে আমাদের মোট ${fmtBDT(totalBalance, true)} টাকা পাওনা আছে। অনুগ্রহ করে শীঘ্রই পরিশোধ করুন।\n\n— UnReal BS`
   )
   const waUrl = `https://wa.me/88${contact.phone.replace(/^0/, '')}?text=${waMsg}`
 
@@ -688,16 +734,16 @@ function ContactLedger({
 
       {/* Balance summary card */}
       <div className="rounded-2xl p-5 text-white" style={{ background: 'linear-gradient(135deg, #7C3AED 0%, #5B21B6 100%)' }}>
-        <p className="text-white/70 text-sm mb-1">মোট বাকি আছে</p>
-        <p className="text-3xl font-bold mb-4">{fmtBDT(totalBalance)}</p>
+        <p className="text-white/70 text-sm mb-1">{isBn ? 'মোট বাকি আছে' : 'Total outstanding'}</p>
+        <p className="text-3xl font-bold mb-4">{fmtBDT(totalBalance, isBn)}</p>
         <div className="grid grid-cols-2 gap-3 mb-4">
           <div className="bg-white/15 rounded-xl p-3">
-            <p className="text-white/60 text-xs mb-0.5">মোট উধার</p>
-            <p className="font-bold">{fmtBDT(totalCredit)}</p>
+            <p className="text-white/60 text-xs mb-0.5">{isBn ? 'মোট উধার' : 'Total credit'}</p>
+            <p className="font-bold">{fmtBDT(totalCredit, isBn)}</p>
           </div>
           <div className="bg-white/15 rounded-xl p-3">
-            <p className="text-white/60 text-xs mb-0.5">মোট পরিশোধ</p>
-            <p className="font-bold text-[#00C875]">{fmtBDT(totalPaid)}</p>
+            <p className="text-white/60 text-xs mb-0.5">{isBn ? 'মোট পরিশোধ' : 'Total paid'}</p>
+            <p className="font-bold text-[#00C875]">{fmtBDT(totalPaid, isBn)}</p>
           </div>
         </div>
         <div className="flex gap-2">
@@ -705,13 +751,13 @@ function ContactLedger({
             onClick={onAddCredit}
             className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-white/20 hover:bg-white/30 text-sm font-medium transition-colors"
           >
-            <Plus className="w-4 h-4" /> নতুন উধার
+            <Plus className="w-4 h-4" /> {isBn ? 'নতুন উধার' : 'New credit'}
           </button>
           <a
             href={`tel:${contact.phone}`}
             className="flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl bg-white/20 hover:bg-white/30 text-sm font-medium transition-colors"
           >
-            <Phone className="w-4 h-4" /> কল করুন
+            <Phone className="w-4 h-4" /> {isBn ? 'কল করুন' : 'Call'}
           </a>
           {hasOverdue && (
             <a
@@ -720,7 +766,7 @@ function ContactLedger({
               rel="noopener noreferrer"
               className="flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl bg-[#00C875] hover:bg-[#00B068] text-sm font-medium transition-colors"
             >
-              <Send className="w-4 h-4" /> রিমাইন্ডার
+              <Send className="w-4 h-4" /> {isBn ? 'রিমাইন্ডার' : 'Remind'}
             </a>
           )}
         </div>
@@ -728,12 +774,14 @@ function ContactLedger({
 
       {/* Ledger entries */}
       <div className="space-y-3">
-        <h3 className="font-semibold text-gray-900 text-sm">লেনদেনের ইতিহাস ({ledger.length}টি)</h3>
+        <h3 className="font-semibold text-gray-900 text-sm">
+          {isBn ? `লেনদেনের ইতিহাস (${ledger.length}টি)` : `Transaction History (${ledger.length})`}
+        </h3>
         {ledger.length === 0 ? (
-          <div className="text-center py-10 text-gray-400 text-sm">এখনো কোনো লেনদেন নেই</div>
+          <div className="text-center py-10 text-gray-400 text-sm">{isBn ? 'এখনো কোনো লেনদেন নেই' : 'No transactions yet'}</div>
         ) : (
           ledger.map((entry) => {
-            const aging = agingLabel(entry.daysOverdue)
+            const aging = agingLabel(entry.daysOverdue, isBn)
             return (
               <div key={entry.id} className={cn(
                 'bg-white rounded-2xl border p-4 space-y-3',
@@ -743,7 +791,7 @@ function ContactLedger({
                   <div className="flex-1 min-w-0">
                     <p className="font-medium text-gray-900 text-sm">{entry.description}</p>
                     <div className="flex items-center gap-2 mt-0.5 flex-wrap">
-                      <span className="text-xs text-gray-400">{fmtDate(entry.date)}</span>
+                      <span className="text-xs text-gray-400">{fmtDate(entry.date, isBn)}</span>
                       {entry.status !== 'paid' && (
                         <span className="text-xs px-1.5 py-0.5 rounded-full font-medium" style={{ backgroundColor: aging.bg, color: aging.color }}>
                           {aging.label}
@@ -757,8 +805,11 @@ function ContactLedger({
                 {/* Amount bar */}
                 <div className="space-y-1.5">
                   <div className="flex justify-between text-xs text-gray-500">
-                    <span>মোট: {fmtBDT(entry.amount)}</span>
-                    <span>পেয়েছি: {fmtBDT(entry.paidAmount)} · বাকি: <span className="font-bold text-red-500">{fmtBDT(entry.balance)}</span></span>
+                    <span>{isBn ? 'মোট' : 'Total'}: {fmtBDT(entry.amount, isBn)}</span>
+                    <span>
+                      {isBn ? 'পেয়েছি' : 'Received'}: {fmtBDT(entry.paidAmount, isBn)} · {isBn ? 'বাকি' : 'Due'}:{' '}
+                      <span className="font-bold text-red-500">{fmtBDT(entry.balance, isBn)}</span>
+                    </span>
                   </div>
                   <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
                     <div
@@ -774,11 +825,11 @@ function ContactLedger({
                 {/* Payment history */}
                 {entry.payments.length > 0 && (
                   <div className="bg-gray-50 rounded-xl p-3 space-y-1.5">
-                    <p className="text-xs text-gray-400 font-medium">পেমেন্ট ইতিহাস</p>
+                    <p className="text-xs text-gray-400 font-medium">{isBn ? 'পেমেন্ট ইতিহাস' : 'Payment history'}</p>
                     {entry.payments.map(p => (
                       <div key={p.id} className="flex items-center justify-between text-xs">
-                        <span className="text-gray-500">{fmtDate(p.date)} {p.note ? `· ${p.note}` : ''}</span>
-                        <span className="font-semibold text-[#00C875]">+{fmtBDT(p.amount)}</span>
+                        <span className="text-gray-500">{fmtDate(p.date, isBn)} {p.note ? `· ${p.note}` : ''}</span>
+                        <span className="font-semibold text-[#00C875]">+{fmtBDT(p.amount, isBn)}</span>
                       </div>
                     ))}
                   </div>
@@ -789,7 +840,7 @@ function ContactLedger({
                     onClick={() => onRecordPayment(entry)}
                     className="w-full py-2 rounded-xl bg-[#00C875]/10 text-[#00A85A] text-sm font-medium hover:bg-[#00C875]/20 transition-colors flex items-center justify-center gap-1.5"
                   >
-                    <CheckCircle2 className="w-4 h-4" /> পেমেন্ট রেকর্ড করুন
+                    <CheckCircle2 className="w-4 h-4" /> {isBn ? 'পেমেন্ট রেকর্ড করুন' : 'Record Payment'}
                   </button>
                 )}
               </div>
@@ -804,6 +855,7 @@ function ContactLedger({
 // ─── Main Shell ────────────────────────────────────────────────────────────────
 
 export function UdharKhataShell() {
+  const isBn = useLocale() === 'bn'
   const khata = useKhata()
   const [search, setSearch] = useState('')
   const [filter, setFilter] = useState<FilterTab>('all')
@@ -882,16 +934,18 @@ export function UdharKhataShell() {
             <div className="w-8 h-8 rounded-xl bg-[#7C3AED]/10 flex items-center justify-center">
               <BookOpen className="w-4 h-4 text-[#7C3AED]" />
             </div>
-            <h1 className="text-xl font-bold text-gray-900">উধার খাতা</h1>
+            <h1 className="text-xl font-bold text-gray-900">{isBn ? 'উধার খাতা' : 'Udhar Khata'}</h1>
           </div>
-          <p className="text-sm text-gray-500">বাকি বিক্রি ট্র্যাক করুন, সময়মতো আদায় করুন</p>
+          <p className="text-sm text-gray-500">
+            {isBn ? 'বাকি বিক্রি ট্র্যাক করুন, সময়মতো আদায় করুন' : 'Track credit sales, collect on time'}
+          </p>
         </div>
         <div className="flex gap-2">
           <button
             onClick={() => setShowAddCredit(true)}
             className="flex items-center gap-1.5 px-3 py-2 bg-[#7C3AED] text-white text-sm font-medium rounded-xl hover:bg-[#6D28D9] transition-colors"
           >
-            <Plus className="w-4 h-4" /> উধার যোগ
+            <Plus className="w-4 h-4" /> {isBn ? 'উধার যোগ' : 'Add Credit'}
           </button>
           <button
             onClick={() => setShowAddContact(true)}
@@ -909,40 +963,40 @@ export function UdharKhataShell() {
             <div className="w-8 h-8 rounded-xl bg-[#7C3AED]/10 flex items-center justify-center">
               <TrendingUp className="w-4 h-4 text-[#7C3AED]" />
             </div>
-            <span className="text-xs text-gray-400">মোট পাওনা</span>
+            <span className="text-xs text-gray-400">{isBn ? 'মোট পাওনা' : 'Total receivable'}</span>
           </div>
-          <p className="text-xl font-bold text-gray-900">{fmtBDT(s.totalReceivable)}</p>
-          <p className="text-xs text-gray-400 mt-0.5">{s.activeDebtors} জন গ্রাহক</p>
+          <p className="text-xl font-bold text-gray-900">{fmtBDT(s.totalReceivable, isBn)}</p>
+          <p className="text-xs text-gray-400 mt-0.5">{isBn ? `${s.activeDebtors} জন গ্রাহক` : `${s.activeDebtors} customers`}</p>
         </div>
         <div className="bg-white rounded-2xl border border-red-100 p-4">
           <div className="flex items-center justify-between mb-2">
             <div className="w-8 h-8 rounded-xl bg-red-50 flex items-center justify-center">
               <AlertTriangle className="w-4 h-4 text-red-500" />
             </div>
-            <span className="text-xs text-gray-400">মেয়াদ পেরিয়েছে</span>
+            <span className="text-xs text-gray-400">{isBn ? 'মেয়াদ পেরিয়েছে' : 'Overdue'}</span>
           </div>
-          <p className="text-xl font-bold text-red-600">{fmtBDT(s.overdueAmount)}</p>
-          <p className="text-xs text-red-400 mt-0.5">{s.overdueCount}টি এন্ট্রি</p>
+          <p className="text-xl font-bold text-red-600">{fmtBDT(s.overdueAmount, isBn)}</p>
+          <p className="text-xs text-red-400 mt-0.5">{isBn ? `${s.overdueCount}টি এন্ট্রি` : `${s.overdueCount} entries`}</p>
         </div>
         <div className="bg-white rounded-2xl border border-gray-200 p-4">
           <div className="flex items-center justify-between mb-2">
             <div className="w-8 h-8 rounded-xl bg-[#00C875]/10 flex items-center justify-center">
               <TrendingDown className="w-4 h-4 text-[#00C875]" />
             </div>
-            <span className="text-xs text-gray-400">এই মাসে আদায়</span>
+            <span className="text-xs text-gray-400">{isBn ? 'এই মাসে আদায়' : 'Collected this month'}</span>
           </div>
-          <p className="text-xl font-bold text-[#00C875]">{fmtBDT(s.collectedThisMonth)}</p>
-          <p className="text-xs text-gray-400 mt-0.5">এই মাসে পেয়েছি</p>
+          <p className="text-xl font-bold text-[#00C875]">{fmtBDT(s.collectedThisMonth, isBn)}</p>
+          <p className="text-xs text-gray-400 mt-0.5">{isBn ? 'এই মাসে পেয়েছি' : 'Received this month'}</p>
         </div>
         <div className="bg-white rounded-2xl border border-gray-200 p-4">
           <div className="flex items-center justify-between mb-2">
             <div className="w-8 h-8 rounded-xl bg-gray-100 flex items-center justify-center">
               <Clock className="w-4 h-4 text-gray-500" />
             </div>
-            <span className="text-xs text-gray-400">মোট গ্রাহক</span>
+            <span className="text-xs text-gray-400">{isBn ? 'মোট গ্রাহক' : 'Total customers'}</span>
           </div>
           <p className="text-xl font-bold text-gray-900">{khata.contacts.length}</p>
-          <p className="text-xs text-gray-400 mt-0.5">{s.activeDebtors} জনের বাকি আছে</p>
+          <p className="text-xs text-gray-400 mt-0.5">{isBn ? `${s.activeDebtors} জনের বাকি আছে` : `${s.activeDebtors} owe balances`}</p>
         </div>
       </div>
 
@@ -952,14 +1006,17 @@ export function UdharKhataShell() {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-300" />
           <input
             type="text"
-            placeholder="গ্রাহক খুঁজুন..."
+            placeholder={isBn ? 'গ্রাহক খুঁজুন...' : 'Search customers...'}
             value={search}
             onChange={e => setSearch(e.target.value)}
             className="w-full pl-9 pr-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-[#7C3AED] focus:ring-2 focus:ring-[#7C3AED]/10 bg-white"
           />
         </div>
         <div className="flex gap-1 bg-gray-100 p-1 rounded-xl">
-          {([['all', 'সবাই'], ['overdue', 'বাকি'], ['paid', 'ক্লিয়ার']] as const).map(([key, label]) => (
+          {(isBn
+            ? ([['all', 'সবাই'], ['overdue', 'বাকি'], ['paid', 'ক্লিয়ার']] as const)
+            : ([['all', 'All'], ['overdue', 'Overdue'], ['paid', 'Cleared']] as const)
+          ).map(([key, label]) => (
             <button
               key={key}
               onClick={() => setFilter(key)}
@@ -979,15 +1036,17 @@ export function UdharKhataShell() {
         {filteredContacts.length === 0 ? (
           <div className="text-center py-12 text-gray-400">
             <BookOpen className="w-8 h-8 mx-auto mb-2 opacity-30" />
-            <p className="text-sm">কোনো গ্রাহক পাওয়া যায়নি</p>
-            <button onClick={() => setShowAddContact(true)} className="mt-2 text-[#7C3AED] text-sm hover:underline">নতুন গ্রাহক যোগ করুন</button>
+            <p className="text-sm">{isBn ? 'কোনো গ্রাহক পাওয়া যায়নি' : 'No customers found'}</p>
+            <button onClick={() => setShowAddContact(true)} className="mt-2 text-[#7C3AED] text-sm hover:underline">
+              {isBn ? 'নতুন গ্রাহক যোগ করুন' : 'Add a new customer'}
+            </button>
           </div>
         ) : (
           filteredContacts.map(contact => {
             const bal = khata.contactBalance(contact.id)
             const ces = khata.entries.filter(e => e.contactId === contact.id && e.status !== 'paid')
             const maxOverdue = Math.max(0, ...ces.map(e => daysOverdue(e.dueDate)))
-            const aging = agingLabel(maxOverdue)
+            const aging = agingLabel(maxOverdue, isBn)
             const hasBalance = bal.balance > 0
 
             return (
@@ -1016,17 +1075,17 @@ export function UdharKhataShell() {
                   </div>
                   <p className="text-xs text-gray-400 truncate">{contact.area} · {contact.phone}</p>
                   <div className="flex items-center gap-3 mt-1">
-                    <span className="text-xs text-gray-400">মোট: {fmtBDT(bal.total)}</span>
-                    <span className="text-xs text-[#00C875]">পেয়েছি: {fmtBDT(bal.paid)}</span>
+                    <span className="text-xs text-gray-400">{isBn ? 'মোট' : 'Total'}: {fmtBDT(bal.total, isBn)}</span>
+                    <span className="text-xs text-[#00C875]">{isBn ? 'পেয়েছি' : 'Received'}: {fmtBDT(bal.paid, isBn)}</span>
                   </div>
                 </div>
 
                 {/* Balance */}
                 <div className="text-right flex-shrink-0">
                   <p className={cn('text-base font-bold', hasBalance ? 'text-red-500' : 'text-[#00C875]')}>
-                    {hasBalance ? fmtBDT(bal.balance) : '✓ ক্লিয়ার'}
+                    {hasBalance ? fmtBDT(bal.balance, isBn) : (isBn ? '✓ ক্লিয়ার' : '✓ Cleared')}
                   </p>
-                  {hasBalance && <p className="text-xs text-gray-400">বাকি আছে</p>}
+                  {hasBalance && <p className="text-xs text-gray-400">{isBn ? 'বাকি আছে' : 'Outstanding'}</p>}
                 </div>
                 <ChevronRight className="w-4 h-4 text-gray-300 flex-shrink-0" />
               </button>

@@ -49,6 +49,25 @@ function formatTime(ts: number, locale: 'bn' | 'en') {
   return new Date(ts).toLocaleTimeString(locale === 'bn' ? 'bn-BD' : 'en-US', { hour: '2-digit', minute: '2-digit' })
 }
 
+// Server-side free-tier fallback (app/api/ask-ai/chat/route.ts) — used
+// whenever Puter isn't ready or a Puter call fails, so BhaiFreakin AI is
+// never fully blocked waiting on a client-side sign-in.
+async function sendViaFallback(systemPrompt: string, history: Message[], content: string): Promise<string> {
+  const messages = [
+    { role: 'system' as const, content: systemPrompt },
+    ...history.slice(-6).map(m => ({ role: m.role, content: m.content })),
+    { role: 'user' as const, content },
+  ]
+  const res = await fetch('/api/ask-ai/chat', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ messages }),
+  })
+  const json = await res.json().catch(() => ({}))
+  if (!res.ok) throw new Error(json?.message ?? 'Fallback request failed')
+  return json.reply as string
+}
+
 export function AskAIShell() {
   const locale = useLocale()
   const isBn = locale === 'bn'
@@ -77,19 +96,32 @@ export function AskAIShell() {
 
   async function handleSend(text?: string) {
     const content = (text ?? input).trim()
-    if (!content || isTyping || !isReady) return
+    if (!content || isTyping) return
 
+    const historySnapshot = messages
     setMessages(prev => [...prev, { id: Date.now().toString(), role: 'user', content, ts: Date.now() }])
     setInput('')
     setIsTyping(true)
 
     try {
-      const history = messages
-        .slice(-6)
-        .map(m => `${m.role === 'user' ? 'User' : 'BhaiFreakin'}: ${m.content}`)
-        .join('\n')
-      const prompt = history ? `${history}\nUser: ${content}` : content
-      const reply = await sendMessage(prompt, SYSTEM_PROMPT[locale])
+      let reply: string
+      if (isReady) {
+        try {
+          const history = historySnapshot
+            .slice(-6)
+            .map(m => `${m.role === 'user' ? 'User' : 'BhaiFreakin'}: ${m.content}`)
+            .join('\n')
+          const prompt = history ? `${history}\nUser: ${content}` : content
+          reply = await sendMessage(prompt, SYSTEM_PROMPT[locale])
+        } catch {
+          // Puter is loaded but the call itself failed — fall back to the
+          // free server route rather than surfacing an error.
+          reply = await sendViaFallback(SYSTEM_PROMPT[locale], historySnapshot, content)
+        }
+      } else {
+        // Puter isn't ready yet — never block the user waiting for it.
+        reply = await sendViaFallback(SYSTEM_PROMPT[locale], historySnapshot, content)
+      }
       setMessages(prev => [...prev, { id: (Date.now() + 1).toString(), role: 'assistant', content: reply, ts: Date.now() }])
     } catch {
       setMessages(prev => [...prev, {
@@ -156,8 +188,8 @@ export function AskAIShell() {
           <div>
             <p className="font-bold text-gray-900 text-sm">BhaiFreakin AI</p>
             <div className="flex items-center gap-1.5">
-              <span className={cn('w-1.5 h-1.5 rounded-full', isReady ? 'bg-[#00C875] animate-pulse' : 'bg-gray-300')} />
-              <span className="text-xs text-gray-400">{isReady ? (isBn ? 'প্রস্তুত' : 'Ready') : (isBn ? 'লোড হচ্ছে...' : 'Loading...')}</span>
+              <span className="w-1.5 h-1.5 rounded-full bg-[#00C875] animate-pulse" />
+              <span className="text-xs text-gray-400">{isReady ? (isBn ? 'প্রস্তুত' : 'Ready') : (isBn ? 'ফ্রি মোড' : 'Free mode')}</span>
             </div>
           </div>
         </div>
@@ -227,7 +259,7 @@ export function AskAIShell() {
             <p className="text-xs text-gray-400 text-center mb-3">{isBn ? 'দ্রুত শুরু করুন' : 'Quick start'}</p>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               {QUICK_PROMPTS[locale].map(p => (
-                <button key={p.text} onClick={() => handleSend(p.text)} disabled={!isReady} className="flex items-center gap-3 p-3 bg-white border border-gray-200 rounded-xl text-left text-sm text-gray-700 hover:border-[#7C3AED]/40 hover:bg-[#EDE9FE]/20 transition-colors disabled:opacity-50 group">
+                <button key={p.text} onClick={() => handleSend(p.text)} className="flex items-center gap-3 p-3 bg-white border border-gray-200 rounded-xl text-left text-sm text-gray-700 hover:border-[#7C3AED]/40 hover:bg-[#EDE9FE]/20 transition-colors group">
                   <span className="text-lg flex-shrink-0">{p.emoji}</span>
                   <span className="leading-snug text-xs">{p.text}</span>
                 </button>
@@ -246,12 +278,11 @@ export function AskAIShell() {
             value={input}
             onChange={e => setInput(e.target.value)}
             onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend() } }}
-            placeholder={isReady ? (isBn ? 'BhaiFreakin-কে জিজ্ঞেস করুন...' : 'Ask BhaiFreakin...') : (isBn ? 'AI লোড হচ্ছে...' : 'AI is loading...')}
-            disabled={!isReady}
+            placeholder={isBn ? 'BhaiFreakin-কে জিজ্ঞেস করুন...' : 'Ask BhaiFreakin...'}
             rows={1}
             className="flex-1 bg-transparent text-sm text-gray-800 placeholder:text-gray-400 resize-none focus:outline-none min-h-[36px] max-h-32 py-1.5 leading-relaxed disabled:opacity-50"
           />
-          <button onClick={() => handleSend()} disabled={!input.trim() || isTyping || !isReady} className="w-9 h-9 rounded-xl bg-[#7C3AED] flex items-center justify-center hover:bg-[#6D28D9] disabled:opacity-40 transition-colors flex-shrink-0" aria-label="Send message">
+          <button onClick={() => handleSend()} disabled={!input.trim() || isTyping} className="w-9 h-9 rounded-xl bg-[#7C3AED] flex items-center justify-center hover:bg-[#6D28D9] disabled:opacity-40 transition-colors flex-shrink-0" aria-label="Send message">
             {isTyping ? <Loader2 className="w-4 h-4 text-white animate-spin" /> : <Send className="w-4 h-4 text-white" />}
           </button>
         </div>

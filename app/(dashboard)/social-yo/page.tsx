@@ -1,5 +1,5 @@
-import { SocialYo } from '@/components/social-yo/SocialYo'
+import { redirect } from 'next/navigation'
 
 export default function SocialYoPage() {
-  return <SocialYo />
+  redirect('/social-market')
 }

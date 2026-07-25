@@ -4,10 +4,18 @@ import { useState } from 'react'
 import { Plus, Clock, CheckCircle2, AlertCircle, Image as ImageIcon, Type } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
+// Full roster shown honestly — TikTok and Snapchat are listed but have zero
+// backend integration yet (connected: false), matching LinkedIn's existing
+// honest state. Only Facebook/Instagram compose today; real posting/API
+// integration per platform (Meta Graph API, LinkedIn API, TikTok API,
+// Snapchat Marketing API) is a separate, much larger undertaking requiring
+// developer app registration and review with each platform.
 const platforms = [
   { id: 'facebook', icon: '📘', label: 'Facebook', connected: true },
   { id: 'instagram', icon: '📸', label: 'Instagram', connected: true },
   { id: 'linkedin', icon: '💼', label: 'LinkedIn', connected: false },
+  { id: 'tiktok', icon: '🎵', label: 'TikTok', connected: false },
+  { id: 'snapchat', icon: '👻', label: 'Snapchat', connected: false },
 ]
 
 const mockPosts = [
@@ -24,9 +32,9 @@ const statusConfig: Record<string, { label: string; color: string; icon: React.E
   failed: { label: 'ব্যর্থ', color: 'text-red-600 bg-red-50', icon: AlertCircle },
 }
 
-const platformIcons: Record<string, string> = { facebook: '📘', instagram: '📸', linkedin: '💼' }
+const platformIcons: Record<string, string> = { facebook: '📘', instagram: '📸', linkedin: '💼', tiktok: '🎵', snapchat: '👻' }
 
-export function SocialYo() {
+export function SocialMarket() {
   const [viewMode, setViewMode] = useState<'list' | 'compose'>('list')
   const [postContent, setPostContent] = useState('')
   const [selectedPlatforms, setSelectedPlatforms] = useState<string[]>(['facebook'])
@@ -114,7 +122,7 @@ export function SocialYo() {
     <div className="p-4 md:p-6 space-y-5 max-w-3xl mx-auto">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-bold text-gray-900">সোশ্যাল Yo</h1>
+          <h1 className="text-xl font-bold text-gray-900">সোশ্যাল মার্কেট</h1>
           <p className="text-sm text-gray-500 mt-0.5">সোশ্যাল মিডিয়া ম্যানেজমেন্ট</p>
         </div>
         <button
@@ -141,7 +149,7 @@ export function SocialYo() {
             {p.connected ? (
               <span className="w-2 h-2 rounded-full bg-green-400" />
             ) : (
-              <span className="text-xs text-[#7C3AED] font-medium">সংযুক্ত করুন</span>
+              <span className="text-xs text-[#7C3AED] font-medium">শীঘ্রই</span>
             )}
           </div>
         ))}

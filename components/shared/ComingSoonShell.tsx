@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { CreditCard, HandCoins, Lock, Sparkles } from 'lucide-react'
+import { CreditCard, HandCoins, Lock, Sparkles, Store } from 'lucide-react'
 
 interface ComingSoonFeature {
   emoji: string
@@ -10,11 +10,12 @@ interface ComingSoonFeature {
 }
 
 interface ComingSoonShellProps {
-  feature: 'opportunities' | 'credit_center'
+  feature: 'opportunities' | 'credit_center' | 'meetally'
   eyebrow: string
   headline: string
   subheadline: string
   features: ComingSoonFeature[]
+  children?: React.ReactNode
 }
 
 // Icon picked internally from the feature key rather than passed as a prop —
@@ -23,6 +24,7 @@ interface ComingSoonShellProps {
 const FEATURE_ICON = {
   opportunities: HandCoins,
   credit_center: CreditCard,
+  meetally: Store,
 } as const
 
 // Generalized from the original components/payments/PaymentsComingSoon.tsx
@@ -31,7 +33,9 @@ const FEATURE_ICON = {
 // with fake/demo data pretending to be live. The waitlist form actually
 // persists to unreal_bs_coming_soon_interest via /api/coming-soon/notify —
 // the original's "if (email) setSubmitted(true)" never saved anything.
-export function ComingSoonShell({ feature, eyebrow, headline, subheadline, features }: ComingSoonShellProps) {
+// Optional `children` renders below the waitlist card (e.g. MeetAlly's
+// curated Upwork/Fiverr links, which are real and don't need to wait).
+export function ComingSoonShell({ feature, eyebrow, headline, subheadline, features, children }: ComingSoonShellProps) {
   const Icon = FEATURE_ICON[feature]
   const [email, setEmail] = useState('')
   const [submitting, setSubmitting] = useState(false)
@@ -133,6 +137,8 @@ export function ComingSoonShell({ feature, eyebrow, headline, subheadline, featu
           </>
         )}
       </div>
+
+      {children}
     </div>
   )
 }

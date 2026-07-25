@@ -21,6 +21,8 @@ import {
   Wallet,
   MessagesSquare,
   CreditCard,
+  Landmark,
+  Store,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 
@@ -34,6 +36,8 @@ export interface NavItem {
   comingSoon?: boolean
 }
 
+// Real, live features come first; comingSoon placeholders sit at the very
+// end so they never crowd out something a user can actually use today.
 export const navItems: NavItem[] = [
   {
     key: 'dashboard',
@@ -43,20 +47,19 @@ export const navItems: NavItem[] = [
     icon: LayoutDashboard,
   },
   {
-    key: 'opportunities',
-    labelBn: 'Opportunities',
-    labelEn: 'Opportunities',
-    href: '/opportunities',
-    icon: HandCoins,
-    comingSoon: true,
+    key: 'udhar_khata',
+    labelBn: 'Udhar Khata',
+    labelEn: 'Udhar Khata',
+    href: '/udhar-khata',
+    icon: Landmark,
   },
   {
-    key: 'credit_center',
-    labelBn: 'Credit Center',
-    labelEn: 'Credit Center',
-    href: '/credit-center',
-    icon: BookOpen,
-    comingSoon: true,
+    key: 'wallet',
+    labelBn: 'Wallet',
+    labelEn: 'Wallet',
+    href: '/payments',
+    icon: Wallet,
+    badge: 'NEW',
   },
   {
     key: 'ai_subscriptions',
@@ -87,6 +90,14 @@ export const navItems: NavItem[] = [
     labelEn: 'Sales Pipeline',
     href: '/workflows',
     icon: Zap,
+  },
+  {
+    key: 'virtual_cards',
+    labelBn: 'Virtual Cards',
+    labelEn: 'Virtual Cards',
+    href: '/virtual-cards',
+    icon: CreditCard,
+    badge: 'NEW',
   },
   {
     key: 'services',
@@ -148,11 +159,19 @@ export const navItems: NavItem[] = [
     icon: Link2,
   },
   {
-    key: 'social_yo',
-    labelBn: 'Social Yo',
-    labelEn: 'Social Yo',
-    href: '/social-yo',
+    key: 'social_market',
+    labelBn: 'Social Market',
+    labelEn: 'Social Market',
+    href: '/social-market',
     icon: Share2,
+  },
+  {
+    key: 'meetally',
+    labelBn: 'MeetAlly',
+    labelEn: 'MeetAlly',
+    href: '/meetally',
+    icon: Store,
+    comingSoon: true,
   },
   {
     key: 'clan',
@@ -184,20 +203,20 @@ export const navItems: NavItem[] = [
     badge: 'AI',
   },
   {
-    key: 'wallet',
-    labelBn: 'Wallet',
-    labelEn: 'Wallet',
-    href: '/payments',
-    icon: Wallet,
-    badge: 'NEW',
+    key: 'opportunities',
+    labelBn: 'Opportunities',
+    labelEn: 'Opportunities',
+    href: '/opportunities',
+    icon: HandCoins,
+    comingSoon: true,
   },
   {
-    key: 'virtual_cards',
-    labelBn: 'Virtual Cards',
-    labelEn: 'Virtual Cards',
-    href: '/virtual-cards',
-    icon: CreditCard,
-    badge: 'NEW',
+    key: 'credit_center',
+    labelBn: 'Credit Center',
+    labelEn: 'Credit Center',
+    href: '/credit-center',
+    icon: BookOpen,
+    comingSoon: true,
   },
 ]
 

@@ -14,10 +14,11 @@ const LOCATION_ID = process.env.GHL_LOCATION_ID
 const FEATURE_TAGS: Record<string, string> = {
   opportunities: 'OPPORTUNITIES-WAITLIST',
   credit_center: 'CREDIT-CENTER-WAITLIST',
+  meetally: 'MEETALLY-WAITLIST',
 }
 
 const postSchema = z.object({
-  feature: z.enum(['opportunities', 'credit_center']),
+  feature: z.enum(['opportunities', 'credit_center', 'meetally']),
   email: z.string().trim().email(),
 })
 

@@ -30,6 +30,15 @@ const allowedRoutes: Array<{
   { method: 'GET', pattern: /^\/locations\/[^/]+\/stats$/ },
   { method: 'GET', pattern: /^\/opportunities\/pipelines$/ },
   { method: 'GET', pattern: /^\/opportunities\/search$/ },
+  // Added per GHL scope expansion (2026-07-25) — see lib/ghl/calendars.ts,
+  // forms.ts, products.ts, invoices.ts, custom-fields.ts. These will 403 at
+  // the GHL API level (not here) until the Private Integration Token is
+  // granted the matching scopes in the GHL dashboard.
+  { method: 'GET', pattern: /^\/calendars\/?$/ },
+  { method: 'GET', pattern: /^\/forms\/?$/, versions: ['v3'] },
+  { method: 'GET', pattern: /^\/products\/?$/ },
+  { method: 'GET', pattern: /^\/invoices\/?$/ },
+  { method: 'GET', pattern: /^\/custom-fields\/object-key\/[^/]+$/ },
 ]
 
 export async function GET(

@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { ArrowDownLeft, ArrowUpRight, Clock, Loader2, RefreshCw, Wallet } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { useLocale } from '@/lib/i18n/context'
 import { WalletBalanceChip, formatBDT } from '@/components/wallet/WalletBalanceChip'
 import { DepositRequestCard } from '@/components/wallet/DepositRequestCard'
 
@@ -16,20 +17,35 @@ interface LedgerEntry {
   createdAt: string
 }
 
-const KIND_LABELS: Record<string, string> = {
-  deposit: 'ডিপোজিট',
-  card_purchase: 'ভার্চুয়াল কার্ড',
-  card_refund: 'রিফান্ড',
-  ai_usage: 'AI ব্যবহার',
+const KIND_LABELS: Record<'bn' | 'en', Record<string, string>> = {
+  bn: {
+    deposit: 'ডিপোজিট',
+    card_purchase: 'ভার্চুয়াল কার্ড',
+    card_refund: 'রিফান্ড',
+    ai_usage: 'AI ব্যবহার',
+  },
+  en: {
+    deposit: 'Deposit',
+    card_purchase: 'Virtual Card',
+    card_refund: 'Refund',
+    ai_usage: 'AI Usage',
+  },
 }
 
 type Tab = 'deposit' | 'history'
 
-function formatDate(str: string) {
-  return new Date(str).toLocaleDateString('bn-BD', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })
+function formatDate(str: string, isBn: boolean) {
+  return new Date(str).toLocaleDateString(isBn ? 'bn-BD' : 'en-US', {
+    day: '2-digit',
+    month: 'short',
+    hour: '2-digit',
+    minute: '2-digit',
+  })
 }
 
 export function WalletShell() {
+  const locale = useLocale()
+  const isBn = locale === 'bn'
   const [tab, setTab] = useState<Tab>('history')
   const [reloadKey, setReloadKey] = useState(0)
   const [entries, setEntries] = useState<LedgerEntry[]>([])
@@ -61,7 +77,7 @@ export function WalletShell() {
         <div className="flex items-center justify-between mb-5">
           <div className="flex items-center gap-2.5">
             <Wallet className="w-5 h-5 text-white" />
-            <h1 className="text-white font-bold text-lg">ওয়ালেট</h1>
+            <h1 className="text-white font-bold text-lg">{isBn ? 'ওয়ালেট' : 'Wallet'}</h1>
           </div>
           <button
             onClick={() => setReloadKey((k) => k + 1)}
@@ -79,8 +95,8 @@ export function WalletShell() {
       {/* Quick actions */}
       <div className="flex gap-3 px-4 -mt-5">
         {([
-          { tab: 'deposit' as Tab, icon: ArrowDownLeft, label: 'ডিপোজিট' },
-          { tab: 'history' as Tab, icon: Clock, label: 'ইতিহাস' },
+          { tab: 'deposit' as Tab, icon: ArrowDownLeft, label: isBn ? 'ডিপোজিট' : 'Deposit' },
+          { tab: 'history' as Tab, icon: Clock, label: isBn ? 'ইতিহাস' : 'History' },
         ]).map(({ tab: t, icon: Icon, label }) => (
           <button
             key={t}
@@ -106,16 +122,16 @@ export function WalletShell() {
             {loading ? (
               <div className="flex items-center justify-center gap-2 py-12 text-sm text-gray-400">
                 <Loader2 className="h-4 w-4 animate-spin" />
-                লোড হচ্ছে...
+                {isBn ? 'লোড হচ্ছে...' : 'Loading...'}
               </div>
             ) : error ? (
               <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
-                লেনদেনের ইতিহাস লোড করা যায়নি।
+                {isBn ? 'লেনদেনের ইতিহাস লোড করা যায়নি।' : 'Could not load transaction history.'}
               </div>
             ) : entries.length === 0 ? (
               <div className="text-center py-12 bg-white rounded-2xl border border-gray-200">
                 <Clock className="w-10 h-10 text-gray-200 mx-auto mb-3" />
-                <p className="text-gray-400 text-sm">কোনো লেনদেন নেই</p>
+                <p className="text-gray-400 text-sm">{isBn ? 'কোনো লেনদেন নেই' : 'No transactions yet'}</p>
               </div>
             ) : (
               <div className="bg-white rounded-2xl border border-gray-200 divide-y divide-gray-50 overflow-hidden">
@@ -135,10 +151,10 @@ export function WalletShell() {
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium text-gray-900 truncate">
-                        {KIND_LABELS[e.kind] ?? e.kind}
+                        {KIND_LABELS[isBn ? 'bn' : 'en'][e.kind] ?? e.kind}
                       </p>
                       <div className="flex items-center gap-2 text-xs text-gray-400">
-                        <span>{formatDate(e.createdAt)}</span>
+                        <span>{formatDate(e.createdAt, isBn)}</span>
                         {e.note && <span>· {e.note}</span>}
                       </div>
                     </div>
@@ -146,7 +162,9 @@ export function WalletShell() {
                       <p className={cn('text-sm font-bold', e.direction === 'credit' ? 'text-green-600' : 'text-gray-900')}>
                         {e.direction === 'credit' ? '+' : '-'}{formatBDT(e.amountBdt)}
                       </p>
-                      <span className="text-[10px] text-gray-400">{formatBDT(e.balanceAfterBdt)} ব্যালেন্স</span>
+                      <span className="text-[10px] text-gray-400">
+                        {formatBDT(e.balanceAfterBdt)} {isBn ? 'ব্যালেন্স' : 'balance'}
+                      </span>
                     </div>
                   </div>
                 ))}

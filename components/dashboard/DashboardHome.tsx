@@ -6,10 +6,10 @@ import {
   CheckCircle2,
   CreditCard,
   Inbox,
+  Landmark,
   LineChart,
   MessageSquare,
   ShieldCheck,
-  Sparkles,
   Users,
 } from 'lucide-react'
 import { Card, CardHeader, CardTitle } from '@/components/ui/card'
@@ -23,28 +23,16 @@ interface DashboardHomeProps {
   totalContacts: number
   totalConversations: number
   pipelineRevenue: number
+  walletBalance: number | null
+  udharOutstanding: number | null
 }
-
-const actions = [
-  { label: 'View Opportunities', href: '/opportunities', icon: Sparkles, tone: 'green' },
-  { label: 'Open Credit Center', href: '/credit-center', icon: CreditCard, tone: 'gold' },
-  { label: 'Open Inbox', href: '/conversations', icon: MessageSquare, tone: 'violet' },
-  { label: 'View Services', href: '/services', icon: ShieldCheck, tone: 'blue' },
-]
-
-const nextBestActions = [
-  'Review 3 new opportunities',
-  'Contact 5 pending leads',
-  'Send 2 follow-ups',
-  'Check weekly credit settlement',
-]
 
 function money(amount: number) {
   return new Intl.NumberFormat('en-BD', {
     style: 'currency',
     currency: 'BDT',
     maximumFractionDigits: 0,
-  }).format(amount || 248750).replace('BDT', '৳')
+  }).format(amount).replace('BDT', '৳')
 }
 
 function toneClasses(tone: string) {
@@ -57,16 +45,69 @@ function toneClasses(tone: string) {
   return map[tone] ?? map.violet
 }
 
-export function DashboardHome({ totalContacts, totalConversations, pipelineRevenue }: DashboardHomeProps) {
+export function DashboardHome({
+  totalContacts,
+  totalConversations,
+  pipelineRevenue,
+  walletBalance,
+  udharOutstanding,
+}: DashboardHomeProps) {
   const locale = useLocale()
+  const isBn = locale === 'bn'
+
+  const actions = [
+    { label: isBn ? 'ওয়ালেট দেখুন' : 'Open Wallet', href: '/payments', icon: CreditCard, tone: 'gold' },
+    { label: isBn ? 'উধার খাতা দেখুন' : 'Open Udhar Khata', href: '/udhar-khata', icon: Landmark, tone: 'green' },
+    { label: isBn ? 'ইনবক্স খুলুন' : 'Open Inbox', href: '/conversations', icon: MessageSquare, tone: 'violet' },
+    { label: isBn ? 'সার্ভিস দেখুন' : 'View Services', href: '/services', icon: ShieldCheck, tone: 'blue' },
+  ]
+
+  const nextBestActions = isBn
+    ? ['৫টি পেন্ডিং লিড কল করুন', '২টি ফলো-আপ পাঠান', 'উধার খাতার বকেয়া চেক করুন', 'ওয়ালেট ব্যালেন্স রিভিউ করুন']
+    : ['Contact 5 pending leads', 'Send 2 follow-ups', 'Check Udhar Khata dues', 'Review wallet balance']
 
   const stats = [
-    { label: 'New Leads', value: formatNumber(totalContacts, locale), helper: 'GHL contact total', icon: Users, tone: 'green' },
-    { label: 'Follow-ups Due', value: formatNumber(Math.max(5, Math.round(totalConversations * 0.32)), locale), helper: 'Inbox action estimate', icon: Inbox, tone: 'violet' },
-    { label: 'Accepted Opportunities', value: '0', helper: 'Demo starts clean', icon: Sparkles, tone: 'gold' },
-    { label: 'This Month Revenue', value: money(pipelineRevenue), helper: pipelineRevenue ? 'From pipeline value' : 'Demo fallback', icon: LineChart, tone: 'blue' },
-    { label: 'Available Credit', value: '৳5,000', helper: 'Starter pilot limit', icon: CreditCard, tone: 'green' },
-    { label: 'Outstanding Settlement', value: '৳0', helper: 'Accepted opportunity settlement', icon: ShieldCheck, tone: 'gold' },
+    {
+      label: isBn ? 'নতুন লিড' : 'New Leads',
+      value: formatNumber(totalContacts, locale),
+      helper: isBn ? 'GHL কন্টাক্ট মোট' : 'GHL contact total',
+      icon: Users,
+      tone: 'green',
+    },
+    {
+      label: isBn ? 'ফলো-আপ বাকি' : 'Follow-ups Due',
+      value: formatNumber(Math.max(5, Math.round(totalConversations * 0.32)), locale),
+      helper: isBn ? 'ইনবক্স অ্যাকশন অনুমান' : 'Inbox action estimate',
+      icon: Inbox,
+      tone: 'violet',
+    },
+    {
+      label: isBn ? 'এই মাসের রেভিনিউ' : 'This Month Revenue',
+      value: money(pipelineRevenue),
+      helper: pipelineRevenue
+        ? (isBn ? 'পাইপলাইন ভ্যালু থেকে' : 'From pipeline value')
+        : (isBn ? 'কোনো ডেটা নেই' : 'No data yet'),
+      icon: LineChart,
+      tone: 'blue',
+    },
+    {
+      label: isBn ? 'ওয়ালেট ব্যালেন্স' : 'Wallet Balance',
+      value: walletBalance === null ? '—' : money(walletBalance),
+      helper: walletBalance === null
+        ? (isBn ? 'লগইন করুন' : 'Sign in to view')
+        : (isBn ? 'তাৎক্ষণিক ব্যালেন্স' : 'Live balance'),
+      icon: CreditCard,
+      tone: 'gold',
+    },
+    {
+      label: isBn ? 'উধার বকেয়া' : 'Udhar Outstanding',
+      value: udharOutstanding === null ? '—' : money(udharOutstanding),
+      helper: udharOutstanding === null
+        ? (isBn ? 'লগইন করুন' : 'Sign in to view')
+        : (isBn ? 'উধার খাতা থেকে' : 'From Udhar Khata'),
+      icon: Landmark,
+      tone: 'green',
+    },
   ]
 
   return (
@@ -75,39 +116,44 @@ export function DashboardHome({ totalContacts, totalConversations, pipelineReven
         <div className="grid gap-6 p-5 md:grid-cols-[1fr_auto] md:p-7">
           <div>
             <div className="mb-4 flex flex-wrap items-center gap-2">
-              <Badge variant="accent" dot>Founding pilot</Badge>
-              <Badge variant="outline" className="border-white/15 bg-white/10 text-white">Demo fallback shown when GHL is unavailable</Badge>
+              <Badge variant="accent" dot>{isBn ? 'ফাউন্ডিং পাইলট' : 'Founding pilot'}</Badge>
             </div>
-            <h1 className="text-2xl md:text-4xl font-black tracking-tight">Control Room</h1>
+            <h1 className="text-2xl md:text-4xl font-black tracking-tight">
+              {isBn ? 'কন্ট্রোল রুম' : 'Control Room'}
+            </h1>
             <p className="mt-3 max-w-2xl text-sm md:text-base leading-7 text-white/70">
-              Lead, staff, follow-up, sales, reports - one connected business system.
+              {isBn
+                ? 'লিড, স্টাফ, ফলো-আপ, বিক্রয়, রিপোর্ট — একটি সংযুক্ত বিজনেস সিস্টেম।'
+                : 'Lead, staff, follow-up, sales, reports — one connected business system.'}
             </p>
             <p className="mt-2 max-w-2xl text-sm text-white/50">
-              Your business should not depend on memory, manual follow-up, or one person.
-              UNREAL BS turns scattered work into a connected operating system.
+              {isBn
+                ? 'আপনার ব্যবসা স্মৃতি, ম্যানুয়াল ফলো-আপ, বা একজন মানুষের উপর নির্ভর করা উচিত নয়। UnReal BS বিক্ষিপ্ত কাজকে একটি সংযুক্ত অপারেটিং সিস্টেমে পরিণত করে।'
+                : 'Your business should not depend on memory, manual follow-up, or one person. UnReal BS turns scattered work into a connected operating system.'}
             </p>
           </div>
           <div className="rounded-2xl border border-[#00C875]/20 bg-[#00C875]/10 p-5 md:w-72">
-            <p className="text-sm font-black text-[#00C875]">Next Best Action</p>
-            <p className="mt-2 text-sm text-white/70">Start with the highest revenue protection moves today.</p>
-            <Link href="/opportunities" className="mt-5 inline-flex items-center gap-2 text-sm font-black text-[#D8B86A]">
-              Review opportunities
+            <p className="text-sm font-black text-[#00C875]">{isBn ? 'পরবর্তী সেরা পদক্ষেপ' : 'Next Best Action'}</p>
+            <p className="mt-2 text-sm text-white/70">
+              {isBn ? 'আজকের সর্বোচ্চ প্রভাবশালী কাজ দিয়ে শুরু করুন।' : 'Start with the highest-impact moves today.'}
+            </p>
+            <Link href="/udhar-khata" className="mt-5 inline-flex items-center gap-2 text-sm font-black text-[#D8B86A]">
+              {isBn ? 'উধার খাতা দেখুন' : 'Check Udhar Khata'}
               <ArrowRight className="h-4 w-4" />
             </Link>
           </div>
         </div>
       </section>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-6 gap-3 md:gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-3 md:gap-4">
         {stats.map((stat) => {
           const Icon = stat.icon
           return (
-            <Card key={stat.label} className="border-gray-200/80 shadow-[0_10px_40px_rgba(15,23,42,0.04)] xl:col-span-2">
+            <Card key={stat.label} className="border-gray-200/80 shadow-[0_10px_40px_rgba(15,23,42,0.04)]">
               <div className="flex items-start justify-between gap-3">
                 <div className={cn('w-11 h-11 rounded-2xl flex items-center justify-center', toneClasses(stat.tone))}>
                   <Icon className="w-5 h-5" />
                 </div>
-                <span className="rounded-full bg-gray-50 px-2 py-1 text-[11px] font-bold text-gray-500">MVP</span>
               </div>
               <p className="mt-4 text-2xl md:text-3xl font-black text-gray-950 leading-none">{stat.value}</p>
               <p className="mt-2 text-sm font-bold text-gray-700">{stat.label}</p>
@@ -120,8 +166,8 @@ export function DashboardHome({ totalContacts, totalConversations, pipelineReven
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         <Card padding="lg" className="border-gray-200 lg:col-span-2">
           <CardHeader>
-            <CardTitle>Next Best Action</CardTitle>
-            <Badge variant="primary">Today</Badge>
+            <CardTitle>{isBn ? 'পরবর্তী সেরা পদক্ষেপ' : 'Next Best Action'}</CardTitle>
+            <Badge variant="primary">{isBn ? 'আজ' : 'Today'}</Badge>
           </CardHeader>
           <div className="grid gap-3 sm:grid-cols-2">
             {nextBestActions.map((action, index) => (
@@ -137,7 +183,7 @@ export function DashboardHome({ totalContacts, totalConversations, pipelineReven
 
         <Card padding="lg" className="border-gray-200">
           <CardHeader>
-            <CardTitle>Direct Actions</CardTitle>
+            <CardTitle>{isBn ? 'ডিরেক্ট অ্যাকশন' : 'Direct Actions'}</CardTitle>
           </CardHeader>
           <div className="space-y-3">
             {actions.map((action) => {
@@ -163,24 +209,32 @@ export function DashboardHome({ totalContacts, totalConversations, pipelineReven
       <div className="grid grid-cols-1 xl:grid-cols-5 gap-4">
         <Card padding="lg" className="border-gray-200 xl:col-span-3">
           <CardHeader>
-            <CardTitle>Business Performance Trend</CardTitle>
-            <Badge variant="gray">Leads and revenue</Badge>
+            <CardTitle>{isBn ? 'বিজনেস পারফরম্যান্স ট্রেন্ড' : 'Business Performance Trend'}</CardTitle>
+            <Badge variant="gray">{isBn ? 'লিড ও রেভিনিউ' : 'Leads and revenue'}</Badge>
           </CardHeader>
           <DashboardChart />
         </Card>
 
         <Card padding="lg" className="border-gray-200 xl:col-span-2">
           <CardHeader>
-            <CardTitle>Founding Pilot Status</CardTitle>
-            <Badge variant="accent" dot>Ready</Badge>
+            <CardTitle>{isBn ? 'ফাউন্ডিং পাইলট স্ট্যাটাস' : 'Founding Pilot Status'}</CardTitle>
+            <Badge variant="accent" dot>{isBn ? 'প্রস্তুত' : 'Ready'}</Badge>
           </CardHeader>
           <div className="space-y-3 text-sm">
-            {[
-              'Public landing captures eligibility demand.',
-              'GHL remains the system of record.',
-              'Opportunity Credit Center starts demo-clean.',
-              'Service marketplace is ready for manual onboarding.',
-            ].map((item) => (
+            {(isBn
+              ? [
+                  'পাবলিক ল্যান্ডিং যোগ্যতার চাহিদা সংগ্রহ করে।',
+                  'GHL রেকর্ডের মূল সিস্টেম হিসেবে থাকে।',
+                  'ওয়ালেট ও উধার খাতা লাইভ ডেটা দেখায়।',
+                  'সার্ভিস মার্কেটপ্লেস ম্যানুয়াল অনবোর্ডিংয়ের জন্য প্রস্তুত।',
+                ]
+              : [
+                  'Public landing captures eligibility demand.',
+                  'GHL remains the system of record.',
+                  'Wallet and Udhar Khata show live data.',
+                  'Service marketplace is ready for manual onboarding.',
+                ]
+            ).map((item) => (
               <div key={item} className="flex gap-3 rounded-xl bg-gray-50 p-3">
                 <CheckCircle2 className="mt-0.5 h-4 w-4 flex-shrink-0 text-[#059669]" />
                 <span className="text-gray-600">{item}</span>

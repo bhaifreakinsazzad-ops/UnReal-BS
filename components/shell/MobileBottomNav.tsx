@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { LayoutDashboard, MessageSquare, Users, HandCoins, BookOpen } from 'lucide-react'
+import { LayoutDashboard, MessageSquare, Users, HandCoins, Landmark } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 interface MobileBottomNavProps {
@@ -11,8 +11,8 @@ interface MobileBottomNavProps {
 
 const primaryItems = [
   { href: '/', labelBn: 'Control', labelEn: 'Control', icon: LayoutDashboard },
+  { href: '/udhar-khata', labelBn: 'Khata', labelEn: 'Khata', icon: Landmark },
   { href: '/opportunities', labelBn: 'Opps', labelEn: 'Opps', icon: HandCoins, comingSoon: true },
-  { href: '/credit-center', labelBn: 'Credit', labelEn: 'Credit', icon: BookOpen, comingSoon: true },
   { href: '/conversations', labelBn: 'Inbox', labelEn: 'Inbox', icon: MessageSquare },
   { href: '/contacts', labelBn: 'Customers', labelEn: 'Customers', icon: Users },
 ]
