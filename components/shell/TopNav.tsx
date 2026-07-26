@@ -56,12 +56,11 @@ export function TopNav({ locale, onLocaleToggle, onMenuToggle, pageTitle }: TopN
         <h1 className="md:hidden text-base font-semibold text-white flex-1 truncate">{routeLabel}</h1>
       )}
 
-      {/* Route label + GHL sync badge (desktop) */}
+      {/* Route label + attribution badge (desktop) */}
       <div className="hidden md:flex items-center gap-2.5 flex-shrink-0">
         <span className="text-sm font-bold text-white">{routeLabel}</span>
-        <span className="inline-flex items-center gap-1.5 px-2.5 py-[3px] rounded-full text-[11px] font-semibold bg-[#00C875]/[0.14] text-[#34D399]">
-          <span className="w-[5px] h-[5px] rounded-full bg-[#00C875] pulse-dot" />
-          {locale === 'bn' ? 'GHL সিঙ্ক' : 'GHL synced'}
+        <span className="inline-flex items-center gap-1.5 px-2.5 py-[3px] rounded-full text-[11px] font-semibold bg-white/[0.06] text-white/45">
+          {locale === 'bn' ? 'HighLevel দ্বারা চালিত' : 'Powered by HighLevel'}
         </span>
       </div>
 
