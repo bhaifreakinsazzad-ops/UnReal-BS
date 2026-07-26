@@ -34,6 +34,10 @@ export interface NavItem {
   icon: LucideIcon
   badge?: string
   comingSoon?: boolean
+  /** Section this item renders under in the sidebar. Items with no group
+   *  (or group 'more') live under the collapsible "More" toggle so the
+   *  most-used real features aren't crowded by the long tail. */
+  group?: 'workspace' | 'money-ai'
 }
 
 // Real, live features come first; comingSoon placeholders sit at the very
@@ -45,6 +49,7 @@ export const navItems: NavItem[] = [
     labelEn: 'Control Room',
     href: '/',
     icon: LayoutDashboard,
+    group: 'workspace',
   },
   {
     key: 'udhar_khata',
@@ -52,6 +57,7 @@ export const navItems: NavItem[] = [
     labelEn: 'Udhar Khata',
     href: '/udhar-khata',
     icon: Landmark,
+    group: 'workspace',
   },
   {
     key: 'wallet',
@@ -60,6 +66,7 @@ export const navItems: NavItem[] = [
     href: '/payments',
     icon: Wallet,
     badge: 'NEW',
+    group: 'workspace',
   },
   {
     key: 'ai_subscriptions',
@@ -68,6 +75,7 @@ export const navItems: NavItem[] = [
     href: '/ai-subscriptions',
     icon: MessagesSquare,
     badge: 'NEW',
+    group: 'money-ai',
   },
   {
     key: 'conversations',
@@ -76,6 +84,7 @@ export const navItems: NavItem[] = [
     href: '/conversations',
     icon: MessageSquare,
     badge: '5',
+    group: 'money-ai',
   },
   {
     key: 'contacts',
@@ -83,6 +92,7 @@ export const navItems: NavItem[] = [
     labelEn: 'Customers',
     href: '/contacts',
     icon: Users,
+    group: 'money-ai',
   },
   {
     key: 'workflows',
@@ -90,6 +100,7 @@ export const navItems: NavItem[] = [
     labelEn: 'Sales Pipeline',
     href: '/workflows',
     icon: Zap,
+    group: 'money-ai',
   },
   {
     key: 'virtual_cards',
@@ -98,6 +109,7 @@ export const navItems: NavItem[] = [
     href: '/virtual-cards',
     icon: CreditCard,
     badge: 'NEW',
+    group: 'money-ai',
   },
   {
     key: 'services',
