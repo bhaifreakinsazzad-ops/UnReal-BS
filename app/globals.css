@@ -350,6 +350,16 @@ body {
 }
 
 /* ============================================
+   Safe-area padding for the fixed mobile bottom nav
+   Referenced by MobileBottomNav but previously never defined, so on phones
+   with a gesture bar / notch the nav sat under the home indicator.
+   ============================================ */
+
+.safe-area-pb {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+/* ============================================
    Dark Sidebar Theme Overrides
    ============================================ */
 

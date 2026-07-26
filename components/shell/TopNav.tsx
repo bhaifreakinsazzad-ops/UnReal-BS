@@ -3,6 +3,7 @@
 import { Bell, Globe, Search, ChevronDown, Menu, Gift } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { usePathname } from 'next/navigation'
+import { signOutAction } from '@/app/actions/auth'
 import { navItems } from './nav-items'
 import { CommandPalette } from './CommandPalette'
 
@@ -18,7 +19,26 @@ export function TopNav({ locale, onLocaleToggle, onMenuToggle, pageTitle }: TopN
   const [profileOpen, setProfileOpen] = useState(false)
   const [paletteOpen, setPaletteOpen] = useState(false)
   const [paletteKey, setPaletteKey] = useState(0)
+  const [userEmail, setUserEmail] = useState<string | null>(null)
   const pathname = usePathname()
+
+  // Read the real signed-in identity rather than showing a hardcoded
+  // "Business Operator / Admin" to every account — users need to be able to
+  // confirm which account they are in before revealing card credentials.
+  useEffect(() => {
+    let cancelled = false
+    fetch('/api/auth/session')
+      .then((res) => (res.ok ? res.json() : null))
+      .then((s) => {
+        if (!cancelled && s?.user?.email) setUserEmail(s.user.email)
+      })
+      .catch(() => {})
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  const initials = userEmail ? userEmail.slice(0, 2).toUpperCase() : 'UB'
 
   const openPalette = () => {
     setPaletteKey((k) => k + 1)
@@ -117,26 +137,26 @@ export function TopNav({ locale, onLocaleToggle, onMenuToggle, pageTitle }: TopN
             aria-label="Notifications"
           >
             <Bell className="w-5 h-5" />
-            <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-[#7C3AED] rounded-full pulse-dot" />
+            {/* Unread dot removed: it was unconditional, so every user was
+                permanently told they had unread notifications. It comes back
+                when there is a real unread count to drive it. */}
           </button>
 
           {notificationsOpen && (
             <div className="absolute right-0 top-full mt-1 w-80 bg-white rounded-xl shadow-lg border border-gray-100 z-50 overflow-hidden">
-              <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
+              <div className="px-4 py-3 border-b border-gray-100">
                 <h3 className="text-sm font-semibold text-gray-900">
                   {locale === 'bn' ? 'নোটিফিকেশন' : 'Notifications'}
                 </h3>
-                <span className="text-xs text-[#7C3AED] font-medium cursor-pointer hover:underline">
-                  {locale === 'bn' ? 'সব পড়া হয়েছে' : 'Mark all read'}
-                </span>
               </div>
-              <div className="divide-y divide-gray-50">
-                {mockNotifications.map((n) => (
-                  <div key={n.id} className="px-4 py-3 hover:bg-gray-50 cursor-pointer">
-                    <p className="text-sm text-gray-800">{locale === 'bn' ? n.textBn : n.textEn}</p>
-                    <p className="text-xs text-gray-400 mt-0.5">{locale === 'bn' ? n.timeBn : n.timeEn}</p>
-                  </div>
-                ))}
+              {/* No notification backend exists yet. This previously listed
+                  fabricated events (a lead named "Ariful Islam", a workflow
+                  that "ran successfully") on every page in the app. */}
+              <div className="px-4 py-8 text-center">
+                <Bell className="w-8 h-8 text-gray-200 mx-auto mb-2" />
+                <p className="text-sm text-gray-500">
+                  {locale === 'bn' ? 'এখনো কোনো নোটিফিকেশন নেই' : 'No notifications yet'}
+                </p>
               </div>
             </div>
           )}
@@ -149,14 +169,14 @@ export function TopNav({ locale, onLocaleToggle, onMenuToggle, pageTitle }: TopN
             className="flex items-center gap-2 pl-2 pr-3 py-1.5 rounded-lg hover:bg-white/10 transition-colors"
           >
             <div className="w-8 h-8 rounded-full gradient-primary flex items-center justify-center text-white text-sm font-bold">
-              UB
+              {initials}
             </div>
-            <div className="hidden md:block text-left">
-              <p className="text-sm font-medium text-white leading-none">
-                {locale === 'bn' ? 'বিজনেস অপারেটর' : 'Business Operator'}
+            <div className="hidden md:block text-left max-w-[160px]">
+              <p className="text-sm font-medium text-white leading-none truncate">
+                {userEmail ?? (locale === 'bn' ? 'সাইন ইন করা আছে' : 'Signed in')}
               </p>
               <p className="text-xs text-white/40 mt-0.5">
-                {locale === 'bn' ? 'অ্যাডমিন' : 'Admin'}
+                {locale === 'bn' ? 'অ্যাকাউন্ট' : 'Account'}
               </p>
             </div>
             <ChevronDown className="w-4 h-4 text-white/40 hidden md:block" />
@@ -164,16 +184,16 @@ export function TopNav({ locale, onLocaleToggle, onMenuToggle, pageTitle }: TopN
 
           {profileOpen && (
             <div className="absolute right-0 top-full mt-1 w-48 bg-white rounded-xl shadow-lg border border-gray-100 z-50 overflow-hidden py-1">
-              <a href="/settings/profile" className="block px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 hover:text-gray-900">
-                {locale === 'bn' ? 'প্রোফাইল' : 'Profile'}
-              </a>
+              {/* /settings/profile does not exist — linking to it 404'd. */}
               <a href="/settings" className="block px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 hover:text-gray-900">
                 {locale === 'bn' ? 'সেটিংস' : 'Settings'}
               </a>
               <div className="border-t border-gray-100 mt-1 pt-1">
-                <button className="w-full text-left px-4 py-2.5 text-sm text-red-600 hover:bg-red-50">
-                  {locale === 'bn' ? 'লগআউট' : 'Logout'}
-                </button>
+                <form action={signOutAction}>
+                  <button type="submit" className="w-full text-left px-4 py-2.5 text-sm text-red-600 hover:bg-red-50">
+                    {locale === 'bn' ? 'লগআউট' : 'Logout'}
+                  </button>
+                </form>
               </div>
             </div>
           )}
@@ -196,8 +216,3 @@ export function TopNav({ locale, onLocaleToggle, onMenuToggle, pageTitle }: TopN
   )
 }
 
-const mockNotifications = [
-  { id: 1, textBn: 'নতুন লিড যোগ হয়েছে — আরিফুল ইসলাম', textEn: 'New lead added - Ariful Islam', timeBn: '২ মিনিট আগে', timeEn: '2 min ago' },
-  { id: 2, textBn: 'ওয়ার্কফ্লো সফলভাবে চলেছে', textEn: 'Workflow ran successfully', timeBn: '১ ঘণ্টা আগে', timeEn: '1 hour ago' },
-  { id: 3, textBn: '৩টি নতুন মেসেজ এসেছে', textEn: '3 new messages received', timeBn: 'আজ সকাল ১০টা', timeEn: 'Today 10 AM' },
-]

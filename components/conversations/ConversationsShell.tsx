@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { Search, Plus, Phone, StickyNote, Tag, Send, Paperclip, Smile, ArrowLeft, MessageSquare } from 'lucide-react'
+import { Search, Plus, Phone, StickyNote, Tag, Send, Paperclip, Smile, ArrowLeft, MessageSquare, AlertTriangle, Loader2 } from 'lucide-react'
 import { Avatar } from '@/components/ui/avatar'
 import { cn } from '@/lib/utils'
 import { useLocale } from '@/lib/i18n/context'
@@ -57,6 +57,8 @@ export function ConversationsShell({ conversations, total, locationId }: Props) 
   const [message, setMessage] = useState('')
   const [messages, setMessages] = useState<GHLMessage[]>([])
   const [loadingMessages, setLoadingMessages] = useState(false)
+  const [sending, setSending] = useState(false)
+  const [sendError, setSendError] = useState<string | null>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -101,16 +103,26 @@ export function ConversationsShell({ conversations, total, locationId }: Props) 
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages])
 
+  // A message is only shown in the thread once the API confirms it was accepted.
+  // fetch() does not throw on 4xx/5xx, so res.ok must be checked explicitly —
+  // otherwise a rejected send renders identically to a delivered one and the
+  // user never follows up on a customer reply that never left the building.
   async function handleSend() {
-    if (!message.trim() || !activeConv) return
+    if (!message.trim() || !activeConv || sending) return
     const body = message
-    setMessage('')
+    setSending(true)
+    setSendError(null)
     try {
-      await fetch(`/api/ghl/conversations/messages`, {
+      const res = await fetch(`/api/ghl/conversations/messages`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'x-location-id': locationId },
         body: JSON.stringify({ conversationId: activeConv.id, body, type: activeConv.type }),
       })
+      if (!res.ok) {
+        const json = await res.json().catch(() => ({}))
+        throw new Error(json?.message ?? `Send failed (${res.status})`)
+      }
+      setMessage('')
       setMessages(prev => [...prev, {
         id: Date.now().toString(),
         conversationId: activeConv.id,
@@ -120,7 +132,24 @@ export function ConversationsShell({ conversations, total, locationId }: Props) 
         type: activeConv.type,
         status: 'sent',
       }])
-    } catch {}
+    } catch (err) {
+      // Keep the text in the composer so the user can retry without retyping.
+      setSendError(
+        err instanceof Error && err.message
+          ? err.message
+          : isBn ? 'মেসেজ পাঠানো যায়নি।' : 'Message could not be sent.'
+      )
+      fetch('/api/log-error', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          source: 'conversations-send',
+          message: err instanceof Error ? err.message : 'unknown send failure',
+        }),
+      }).catch(() => {})
+    } finally {
+      setSending(false)
+    }
   }
 
   return (
@@ -233,6 +262,16 @@ export function ConversationsShell({ conversations, total, locationId }: Props) 
             </div>
 
             <div className="px-4 py-3 bg-white border-t border-gray-200 flex-shrink-0">
+              {sendError && (
+                <div className="mb-2 flex items-start gap-2 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-600">
+                  <AlertTriangle className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
+                  <span>
+                    {isBn
+                      ? 'মেসেজটি পাঠানো যায়নি — আবার চেষ্টা করুন। আপনার লেখা মুছে যায়নি।'
+                      : "Message wasn't sent — try again. Your text has been kept."}
+                  </span>
+                </div>
+              )}
               <div className="flex items-end gap-2 bg-gray-50 border border-gray-200 rounded-xl px-3 py-2">
                 <textarea
                   value={message}
@@ -245,8 +284,8 @@ export function ConversationsShell({ conversations, total, locationId }: Props) 
                 <div className="flex items-center gap-1 flex-shrink-0 pb-0.5">
                   <button className="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-200 transition-colors" aria-label="Attach file"><Paperclip className="w-4 h-4" /></button>
                   <button className="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-200 transition-colors" aria-label="Emoji"><Smile className="w-4 h-4" /></button>
-                  <button onClick={handleSend} disabled={!message.trim()} className="w-9 h-9 rounded-xl bg-[#7C3AED] text-white flex items-center justify-center hover:bg-[#6D28D9] disabled:opacity-40 transition-colors" aria-label="Send message">
-                    <Send className="w-4 h-4" />
+                  <button onClick={handleSend} disabled={!message.trim() || sending} className="w-9 h-9 rounded-xl bg-[#7C3AED] text-white flex items-center justify-center hover:bg-[#6D28D9] disabled:opacity-40 transition-colors" aria-label={isBn ? 'মেসেজ পাঠান' : 'Send message'}>
+                    {sending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
                   </button>
                 </div>
               </div>

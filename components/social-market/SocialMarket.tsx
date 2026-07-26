@@ -4,26 +4,22 @@ import { useState } from 'react'
 import { Plus, Clock, CheckCircle2, AlertCircle, Image as ImageIcon, Type } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
-// Full roster shown honestly — TikTok and Snapchat are listed but have zero
-// backend integration yet (connected: false), matching LinkedIn's existing
-// honest state. Only Facebook/Instagram compose today; real posting/API
-// integration per platform (Meta Graph API, LinkedIn API, TikTok API,
-// Snapchat Marketing API) is a separate, much larger undertaking requiring
-// developer app registration and review with each platform.
+// NOTHING on this page is connected to a real social platform yet. There is no
+// Meta Graph / LinkedIn / TikTok / Snapchat client anywhere in lib/, and no OAuth
+// flow exists, so every platform is honestly marked disconnected. Previously
+// Facebook and Instagram were hardcoded `connected: true` and rendered a green
+// live dot, which told users their accounts were linked when they never were.
 const platforms = [
-  { id: 'facebook', icon: '📘', label: 'Facebook', connected: true },
-  { id: 'instagram', icon: '📸', label: 'Instagram', connected: true },
+  { id: 'facebook', icon: '📘', label: 'Facebook', connected: false },
+  { id: 'instagram', icon: '📸', label: 'Instagram', connected: false },
   { id: 'linkedin', icon: '💼', label: 'LinkedIn', connected: false },
   { id: 'tiktok', icon: '🎵', label: 'TikTok', connected: false },
   { id: 'snapchat', icon: '👻', label: 'Snapchat', connected: false },
 ]
 
-const mockPosts = [
-  { id: '1', content: 'আমাদের নতুন পণ্য লঞ্চ হচ্ছে এই সপ্তাহে! 🎉', platform: 'facebook', status: 'published', time: 'আজ সকাল ১০টা', reach: '১,২৩৪' },
-  { id: '2', content: 'বিশেষ ছাড়ে সীমিত সময়ের অফার। এখনই নিন!', platform: 'instagram', status: 'scheduled', time: 'আগামীকাল দুপুর ২টা', reach: '—' },
-  { id: '3', content: 'আমাদের সেবায় সন্তুষ্ট হয়েছেন? রিভিউ দিন...', platform: 'facebook', status: 'draft', time: '—', reach: '—' },
-  { id: '4', content: 'সাফল্যের গল্প: কিভাবে আমাদের ক্লায়েন্ট ৩ মাসে ৩ গুণ আয় বাড়ালেন।', platform: 'instagram', status: 'failed', time: 'গতকাল', reach: '—' },
-]
+// Post history is intentionally empty: there is no publishing backend, so any
+// row here would be fabricated. It stays empty until real posts exist.
+const posts: { id: string; content: string; platform: string; status: string; time: string; reach: string }[] = []
 
 const statusConfig: Record<string, { label: string; color: string; icon: React.ElementType }> = {
   published: { label: 'প্রকাশিত', color: 'text-green-600 bg-green-50', icon: CheckCircle2 },
@@ -51,11 +47,14 @@ export function SocialMarket() {
         <div className="flex items-center justify-between p-4 border-b border-gray-200 bg-white flex-shrink-0">
           <button onClick={() => setViewMode('list')} className="text-sm text-[#7C3AED] font-medium">← ফিরে যান</button>
           <h2 className="text-sm font-bold text-gray-900">নতুন পোস্ট</h2>
+          {/* Publishing is not implemented. This button used to just navigate
+              back, silently discarding the post while the list implied success. */}
           <button
-            onClick={() => setViewMode('list')}
-            className="text-sm px-3 py-1.5 bg-[#7C3AED] text-white rounded-lg font-medium"
+            disabled
+            title="প্রকাশ এখনো চালু হয়নি"
+            className="text-sm px-3 py-1.5 bg-gray-200 text-gray-500 rounded-lg font-medium cursor-not-allowed"
           >
-            পোস্ট করুন
+            প্রকাশ চালু হয়নি
           </button>
         </div>
 
@@ -155,23 +154,26 @@ export function SocialMarket() {
         ))}
       </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-3 gap-3">
-        {[
-          { label: 'প্রকাশিত', value: '২৩', color: 'text-green-600' },
-          { label: 'নির্ধারিত', value: '৭', color: 'text-blue-600' },
-          { label: 'মোট রিচ', value: '১২,৩৪৫', color: 'text-[#7C3AED]' },
-        ].map((stat) => (
-          <div key={stat.label} className="bg-white rounded-xl border border-gray-200 p-3 text-center">
-            <p className={cn('text-xl font-bold', stat.color)}>{stat.value}</p>
-            <p className="text-xs text-gray-500 mt-0.5">{stat.label}</p>
-          </div>
-        ))}
+      {/* Publishing status — honest notice. No platform is connected and there is
+          no posting backend, so no counts or reach figures are shown. */}
+      <div className="flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2.5 text-xs text-amber-800">
+        <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
+        <span>
+          সোশ্যাল অ্যাকাউন্ট সংযোগ ও পোস্ট প্রকাশ এখনো চালু হয়নি। এখানে খসড়া লিখে রাখতে
+          পারেন, কিন্তু পোস্ট এখনো প্রকাশ করা যাবে না।
+        </span>
       </div>
 
       {/* Post List */}
       <div className="space-y-2">
-        {mockPosts.map((post) => {
+        {posts.length === 0 && (
+          <div className="bg-white rounded-xl border border-gray-200 p-8 text-center">
+            <Clock className="w-9 h-9 text-gray-200 mx-auto mb-3" />
+            <p className="text-sm text-gray-500">এখনো কোনো পোস্ট নেই</p>
+            <p className="text-xs text-gray-400 mt-1">প্রকাশ চালু হলে আপনার পোস্টগুলো এখানে দেখা যাবে।</p>
+          </div>
+        )}
+        {posts.map((post) => {
           const config = statusConfig[post.status]
           const Icon = config.icon
           return (

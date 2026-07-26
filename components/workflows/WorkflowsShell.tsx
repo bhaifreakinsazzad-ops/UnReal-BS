@@ -24,11 +24,6 @@ const actionOptions = [
   { labelEn: 'Run Agent', labelBn: 'এজেন্ট চালাও' },
 ]
 
-interface WorkflowToggle {
-  id: string
-  active: boolean
-}
-
 interface Step {
   labelEn: string
   labelBn: string
@@ -44,19 +39,15 @@ export function WorkflowsShell({ workflows: initialWorkflows }: Props) {
   const locale = useLocale()
   const isBn = locale === 'bn'
   const [view, setView] = useState<View>('list')
-  const [toggles, setToggles] = useState<WorkflowToggle[]>(
-    initialWorkflows.map(w => ({ id: w.id, active: w.status === 'published' }))
-  )
   const [showTrigger, setShowTrigger] = useState(false)
   const [steps, setSteps] = useState<Step[]>([])
   const [trigger, setTrigger] = useState<Step | null>(null)
 
-  function toggleWorkflow(id: string) {
-    setToggles(prev => prev.map(t => t.id === id ? { ...t, active: !t.active } : t))
-  }
-
+  // Workflow enable/disable is NOT wired to GHL. A local-only toggle here would
+  // tell the user they had paused a live automation while it kept messaging
+  // their customers, so status is rendered read-only from the real GHL record.
   function isActive(id: string) {
-    return toggles.find(t => t.id === id)?.active ?? false
+    return initialWorkflows.find(w => w.id === id)?.status === 'published'
   }
 
   function label(step: Step) {
@@ -79,9 +70,11 @@ export function WorkflowsShell({ workflows: initialWorkflows }: Props) {
             ← {isBn ? 'ফিরে যান' : 'Back'}
           </button>
           <h2 className="text-sm font-bold text-gray-900">{isBn ? 'নতুন ওয়ার্কফ্লো' : 'New Workflow'}</h2>
-          <button onClick={() => setView('list')} className="text-sm px-3 py-1.5 bg-[#7C3AED] text-white rounded-lg font-medium hover:bg-[#6D28D9] transition-colors">
-            {isBn ? 'সেভ করুন' : 'Save'}
-          </button>
+          {/* Saving is not wired to GHL yet. A "Save" button that silently
+              discarded the user's work was worse than no button at all. */}
+          <span className="text-[11px] font-medium text-amber-700 bg-amber-50 border border-amber-200 rounded-full px-2.5 py-1">
+            {isBn ? 'প্রিভিউ — সেভ হয় না' : 'Preview — not saved'}
+          </span>
         </div>
 
         <div className="flex-1 overflow-y-auto p-4 space-y-3 max-w-lg mx-auto w-full">
@@ -173,9 +166,6 @@ export function WorkflowsShell({ workflows: initialWorkflows }: Props) {
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between mb-1">
                     <h3 className="font-semibold text-gray-900">{wf.name}</h3>
-                    <button onClick={() => toggleWorkflow(wf.id)} className={cn('relative w-11 h-6 rounded-full transition-colors flex-shrink-0', isActive(wf.id) ? 'bg-[#7C3AED]' : 'bg-gray-200')} aria-label="Toggle workflow">
-                      <span className={cn('absolute top-1 w-4 h-4 rounded-full bg-white shadow transition-transform', isActive(wf.id) ? 'translate-x-6' : 'translate-x-1')} />
-                    </button>
                   </div>
                   <div className="flex items-center gap-3 text-xs text-gray-400 mt-2">
                     <span className={cn('px-2 py-0.5 rounded-full font-medium', isActive(wf.id) ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500')}>

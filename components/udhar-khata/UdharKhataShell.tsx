@@ -60,33 +60,6 @@ interface LedgerEntry extends CreditEntry {
 
 type FilterTab = 'all' | 'overdue' | 'paid'
 
-// ─── Seed data (demo fallback only, shown when persistence is unavailable) ────
-
-const SEED_CONTACTS: CreditContact[] = [
-  { id: 'c1', name: 'মোঃ রাশেদুল ইসলাম', phone: '01712345678', area: 'মিরপুর, ঢাকা', createdAt: '2025-01-10' },
-  { id: 'c2', name: 'করিম ট্রেডার্স', phone: '01887654321', area: 'গুলশান, ঢাকা', createdAt: '2025-02-05' },
-  { id: 'c3', name: 'সুমাইয়া এন্টারপ্রাইজ', phone: '01911223344', area: 'চট্টগ্রাম', createdAt: '2025-03-12' },
-  { id: 'c4', name: 'আবু বকর সিদ্দিক', phone: '01655443322', area: 'সিলেট', createdAt: '2025-04-01' },
-  { id: 'c5', name: 'নাহিদ হোলসেল', phone: '01799887766', area: 'নারায়ণগঞ্জ', createdAt: '2025-05-20' },
-]
-
-const SEED_ENTRIES: CreditEntry[] = [
-  { id: 'e1', contactId: 'c1', amount: 15000, description: 'পণ্য সরবরাহ — ব্যাচ ১২', date: '2026-05-01', dueDate: '2026-05-31', paidAmount: 5000, status: 'partial' },
-  { id: 'e2', contactId: 'c1', amount: 8500, description: 'মাসিক অর্ডার — এপ্রিল', date: '2026-04-10', dueDate: '2026-05-10', paidAmount: 0, status: 'pending' },
-  { id: 'e3', contactId: 'c2', amount: 32000, description: 'বাল্ক অর্ডার — রমজান স্টক', date: '2026-04-20', dueDate: '2026-05-20', paidAmount: 32000, status: 'paid' },
-  { id: 'e4', contactId: 'c2', amount: 18500, description: 'বিশেষ অফার — পণ্য সেট', date: '2026-06-01', dueDate: '2026-06-30', paidAmount: 0, status: 'pending' },
-  { id: 'e5', contactId: 'c3', amount: 25000, description: 'কোয়ার্টারলি সাপ্লাই', date: '2026-03-15', dueDate: '2026-04-15', paidAmount: 10000, status: 'partial' },
-  { id: 'e6', contactId: 'c4', amount: 7200, description: 'ছোট অর্ডার', date: '2026-06-10', dueDate: '2026-07-10', paidAmount: 0, status: 'pending' },
-  { id: 'e7', contactId: 'c5', amount: 45000, description: 'বড় পার্টি অর্ডার — ঈদ', date: '2026-05-15', dueDate: '2026-06-15', paidAmount: 20000, status: 'partial' },
-]
-
-const SEED_PAYMENTS: PaymentRecord[] = [
-  { id: 'p1', entryId: 'e1', contactId: 'c1', amount: 5000, date: '2026-05-15', note: 'নগদ পেমেন্ট' },
-  { id: 'p2', entryId: 'e3', contactId: 'c2', amount: 32000, date: '2026-05-18', note: 'bKash ট্রান্সফার' },
-  { id: 'p3', entryId: 'e5', contactId: 'c3', amount: 10000, date: '2026-04-20', note: 'ব্যাংক ট্রান্সফার' },
-  { id: 'p4', entryId: 'e7', contactId: 'c5', amount: 20000, date: '2026-06-01', note: 'নগদ পেমেন্ট' },
-]
-
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function todayStr(): string {
@@ -267,10 +240,14 @@ function useKhata() {
         setPayments(derivedPayments)
       } catch {
         if (cancelled) return
+        // Do NOT substitute seed data here. This previously replaced the
+        // merchant's ledger with five fabricated debtors whose rows carried
+        // live WhatsApp payment-demand and tel: links — during an outage a
+        // user could dun a stranger for money they never owed.
         setPersistenceError(true)
-        setContacts(SEED_CONTACTS)
-        setEntries(SEED_ENTRIES)
-        setPayments(SEED_PAYMENTS)
+        setContacts([])
+        setEntries([])
+        setPayments([])
       } finally {
         if (!cancelled) setLoaded(true)
       }
@@ -419,8 +396,8 @@ function PersistenceBanner() {
       <AlertTriangle className="w-4 h-4 flex-shrink-0" />
       <span>
         {isBn
-          ? 'ডেটা এখনো সংরক্ষণ হচ্ছে না — এই সেশনের পরে পরিবর্তনগুলো হারিয়ে যাবে।'
-          : "Data isn't being saved yet — changes will be lost after this session."}
+          ? 'আপনার খাতা লোড করা যায়নি — এটি আপনার আসল ডেটা নয়, তালিকা খালি দেখাচ্ছে। এখন যোগ করা কিছুই সংরক্ষণ হবে না। একটু পরে আবার চেষ্টা করুন।'
+          : "Couldn't load your khata — the list is empty, this is not your real data. Nothing added now will be saved. Please retry shortly."}
       </span>
     </div>
   )

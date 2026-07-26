@@ -5,6 +5,7 @@ import { getOpportunities } from '@/lib/ghl/pipelines'
 import { auth } from '@/auth'
 import { getSupabaseAdmin, isSupabaseConfigured } from '@/lib/supabase/client'
 import { resolveUserIdByEmail } from '@/lib/supabase/user'
+import { logError } from '@/lib/log-error'
 
 const LOCATION_ID = process.env.GHL_LOCATION_ID!
 
@@ -38,9 +39,13 @@ async function getRealMoneySnapshot() {
 }
 
 export default async function DashboardPage() {
-  let totalContacts = 52
-  let totalConversations = 38
-  let pipelineRevenue = 0
+  // These start as null, NOT as plausible-looking numbers. They were previously
+  // seeded with 52 / 38 (copied from the marketing mockup), so any GHL outage or
+  // expired token silently showed every user "52 New Leads — GHL contact total"
+  // with no indication the fetch had failed.
+  let totalContacts: number | null = null
+  let totalConversations: number | null = null
+  let pipelineRevenue: number | null = null
 
   try {
     const [contactsRes, convsRes, oppsRes] = await Promise.all([
@@ -51,8 +56,8 @@ export default async function DashboardPage() {
     totalContacts = contactsRes.meta.total
     totalConversations = convsRes.total
     pipelineRevenue = oppsRes.opportunities.reduce((sum, o) => sum + (o.monetaryValue || 0), 0)
-  } catch {
-    // Keep the dashboard usable when GHL credentials are not available in local/dev environments.
+  } catch (err) {
+    await logError('dashboard-ghl-fetch', err)
   }
 
   const { walletBalance, udharOutstanding } = await getRealMoneySnapshot()

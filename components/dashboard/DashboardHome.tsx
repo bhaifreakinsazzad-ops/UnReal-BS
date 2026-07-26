@@ -14,15 +14,14 @@ import {
 } from 'lucide-react'
 import { Card, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { DashboardChart } from '@/components/dashboard/DashboardChart'
 import { useLocale } from '@/lib/i18n/context'
 import { formatNumber } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
 
 interface DashboardHomeProps {
-  totalContacts: number
-  totalConversations: number
-  pipelineRevenue: number
+  totalContacts: number | null
+  totalConversations: number | null
+  pipelineRevenue: number | null
   walletBalance: number | null
   udharOutstanding: number | null
 }
@@ -62,31 +61,49 @@ export function DashboardHome({
     { label: isBn ? 'সার্ভিস দেখুন' : 'View Services', href: '/services', icon: ShieldCheck, tone: 'blue' },
   ]
 
-  const nextBestActions = isBn
-    ? ['৫টি পেন্ডিং লিড কল করুন', '২টি ফলো-আপ পাঠান', 'উধার খাতার বকেয়া চেক করুন', 'ওয়ালেট ব্যালেন্স রিভিউ করুন']
-    : ['Contact 5 pending leads', 'Send 2 follow-ups', 'Check Udhar Khata dues', 'Review wallet balance']
+  // Derived from the user's own real data only. The previous list was a fixed
+  // set of strings ("Contact 5 pending leads") shown identically to every user
+  // every day under a heading that implied it was computed for them.
+  const nextBestActions: string[] = []
+  if (udharOutstanding !== null && udharOutstanding > 0) {
+    nextBestActions.push(
+      isBn
+        ? `উধার খাতায় ${money(udharOutstanding)} বকেয়া — আদায় করুন`
+        : `${money(udharOutstanding)} outstanding in Udhar Khata — collect it`
+    )
+  }
+  if (totalConversations !== null && totalConversations > 0) {
+    nextBestActions.push(isBn ? 'ইনবক্সের নতুন মেসেজগুলোর উত্তর দিন' : 'Reply to new messages in your inbox')
+  }
+  if (walletBalance !== null && walletBalance <= 50) {
+    nextBestActions.push(isBn ? 'ওয়ালেট ব্যালেন্স কম — টপ আপ করুন' : 'Wallet balance is low — top up')
+  }
 
   const stats = [
     {
       label: isBn ? 'নতুন লিড' : 'New Leads',
-      value: formatNumber(totalContacts, locale),
-      helper: isBn ? 'GHL কন্টাক্ট মোট' : 'GHL contact total',
+      value: totalContacts === null ? '—' : formatNumber(totalContacts, locale),
+      helper: totalContacts === null
+        ? (isBn ? 'GHL-এ পৌঁছানো যায়নি' : "Couldn't reach GHL")
+        : (isBn ? 'GHL কন্টাক্ট মোট' : 'GHL contact total'),
       icon: Users,
       tone: 'green',
     },
     {
-      label: isBn ? 'ফলো-আপ বাকি' : 'Follow-ups Due',
-      value: formatNumber(Math.max(5, Math.round(totalConversations * 0.32)), locale),
-      helper: isBn ? 'ইনবক্স অ্যাকশন অনুমান' : 'Inbox action estimate',
+      label: isBn ? 'কনভার্সেশন' : 'Conversations',
+      value: totalConversations === null ? '—' : formatNumber(totalConversations, locale),
+      helper: totalConversations === null
+        ? (isBn ? 'GHL-এ পৌঁছানো যায়নি' : "Couldn't reach GHL")
+        : (isBn ? 'ইনবক্সে মোট থ্রেড' : 'Total inbox threads'),
       icon: Inbox,
       tone: 'violet',
     },
     {
-      label: isBn ? 'এই মাসের রেভিনিউ' : 'This Month Revenue',
-      value: money(pipelineRevenue),
-      helper: pipelineRevenue
-        ? (isBn ? 'পাইপলাইন ভ্যালু থেকে' : 'From pipeline value')
-        : (isBn ? 'কোনো ডেটা নেই' : 'No data yet'),
+      label: isBn ? 'ওপেন পাইপলাইন' : 'Open Pipeline',
+      value: pipelineRevenue === null ? '—' : money(pipelineRevenue),
+      helper: pipelineRevenue === null
+        ? (isBn ? 'GHL-এ পৌঁছানো যায়নি' : "Couldn't reach GHL")
+        : (isBn ? 'সব খোলা সুযোগের মোট মূল্য' : 'Total value of all open opportunities'),
       icon: LineChart,
       tone: 'blue',
     },
@@ -169,16 +186,25 @@ export function DashboardHome({
             <CardTitle>{isBn ? 'পরবর্তী সেরা পদক্ষেপ' : 'Next Best Action'}</CardTitle>
             <Badge variant="primary">{isBn ? 'আজ' : 'Today'}</Badge>
           </CardHeader>
-          <div className="grid gap-3 sm:grid-cols-2">
-            {nextBestActions.map((action, index) => (
-              <div key={action} className="flex items-center gap-3 rounded-xl border border-gray-100 bg-gray-50 px-4 py-3">
-                <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-white text-xs font-black text-[#7C3AED] shadow-sm">
-                  {index + 1}
-                </span>
-                <span className="text-sm font-bold text-gray-800">{action}</span>
-              </div>
-            ))}
-          </div>
+          {nextBestActions.length === 0 ? (
+            <div className="flex items-center gap-3 rounded-xl border border-gray-100 bg-gray-50 px-4 py-6">
+              <CheckCircle2 className="h-5 w-5 flex-shrink-0 text-[#059669]" />
+              <span className="text-sm text-gray-600">
+                {isBn ? 'এই মুহূর্তে জরুরি কিছু নেই।' : 'Nothing needs your attention right now.'}
+              </span>
+            </div>
+          ) : (
+            <div className="grid gap-3 sm:grid-cols-2">
+              {nextBestActions.map((action, index) => (
+                <div key={action} className="flex items-center gap-3 rounded-xl border border-gray-100 bg-gray-50 px-4 py-3">
+                  <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-white text-xs font-black text-[#7C3AED] shadow-sm">
+                    {index + 1}
+                  </span>
+                  <span className="text-sm font-bold text-gray-800">{action}</span>
+                </div>
+              ))}
+            </div>
+          )}
         </Card>
 
         <Card padding="lg" className="border-gray-200">
@@ -206,16 +232,12 @@ export function DashboardHome({
         </Card>
       </div>
 
-      <div className="grid grid-cols-1 xl:grid-cols-5 gap-4">
-        <Card padding="lg" className="border-gray-200 xl:col-span-3">
-          <CardHeader>
-            <CardTitle>{isBn ? 'বিজনেস পারফরম্যান্স ট্রেন্ড' : 'Business Performance Trend'}</CardTitle>
-            <Badge variant="gray">{isBn ? 'লিড ও রেভিনিউ' : 'Leads and revenue'}</Badge>
-          </CardHeader>
-          <DashboardChart />
-        </Card>
-
-        <Card padding="lg" className="border-gray-200 xl:col-span-2">
+      {/* The "Business Performance Trend" chart was removed: it rendered a
+          hardcoded 7-day leads/revenue series identical for every account,
+          under a heading that presented it as the user's own business trend.
+          It returns when there is a real per-user time series to plot. */}
+      <div className="grid grid-cols-1 gap-4">
+        <Card padding="lg" className="border-gray-200">
           <CardHeader>
             <CardTitle>{isBn ? 'ফাউন্ডিং পাইলট স্ট্যাটাস' : 'Founding Pilot Status'}</CardTitle>
             <Badge variant="accent" dot>{isBn ? 'প্রস্তুত' : 'Ready'}</Badge>
