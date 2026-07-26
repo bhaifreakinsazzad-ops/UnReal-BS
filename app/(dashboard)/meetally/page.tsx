@@ -1,51 +1,28 @@
 import { ComingSoonShell } from '@/components/shared/ComingSoonShell'
+import { MeetAllyMarketplaces } from '@/components/shared/MeetAllyMarketplaces'
 
 export const metadata = { title: 'MeetAlly - UNREAL BS' }
 
 // meetally.site (the owner's own platform) doesn't resolve yet (DNS
 // failure, verified 2026-07-25) — content here is an honest placeholder
-// per the owner's own choice, not fabricated copy. The Upwork/Fiverr cards
-// below are real, curated external links (same pattern as the Integrations
-// page) — not deep API integration, since that requires each platform's
-// own developer API access, which isn't configured for this app.
-const MARKETPLACES = [
-  { name: 'Upwork', emoji: '🟢', desc: 'Find freelancers and post jobs on the world’s largest freelance marketplace.', url: 'https://www.upwork.com' },
-  { name: 'Fiverr', emoji: '🐸', desc: 'Hire freelancers for fixed-price gigs across every skill category.', url: 'https://www.fiverr.com' },
-]
-
+// per the owner's own choice, not fabricated copy.
 export default function MeetAllyPage() {
   return (
     <ComingSoonShell
       feature="meetally"
-      eyebrow="Your own platform, integrated"
-      headline="MeetAlly is coming."
-      subheadline="Your own MeetAlly platform will be integrated here, alongside curated marketplaces — one place to find talent and get work done."
+      eyebrowEn="Your own platform, integrated"
+      eyebrowBn="আপনার নিজস্ব প্ল্যাটফর্ম, সংযুক্ত"
+      headlineEn="MeetAlly is coming."
+      headlineBn="MeetAlly আসছে।"
+      subheadlineEn="Your own MeetAlly platform will be integrated here, alongside curated marketplaces — one place to find talent and get work done."
+      subheadlineBn="আপনার নিজস্ব MeetAlly প্ল্যাটফর্ম এখানে সংযুক্ত হবে, বাছাই করা মার্কেটপ্লেসের সাথে — মেধা খুঁজে কাজ করানোর এক জায়গা।"
       features={[
-        { emoji: '🤝', title: 'Your platform', desc: 'MeetAlly (meetally.site) integrated directly into UnReal BS.' },
-        { emoji: '🌐', title: 'Curated marketplaces', desc: 'Upwork, Fiverr, and other effective marketplaces in one place.' },
-        { emoji: '⚡', title: 'Built for Bangladesh', desc: 'Matched to how local businesses actually hire and get hired.' },
+        { emoji: '🤝', titleEn: 'Your platform', titleBn: 'আপনার প্ল্যাটফর্ম', descEn: 'MeetAlly (meetally.site) integrated directly into UnReal BS.', descBn: 'MeetAlly (meetally.site) সরাসরি UnReal BS-এ সংযুক্ত।' },
+        { emoji: '🌐', titleEn: 'Curated marketplaces', titleBn: 'বাছাই করা মার্কেটপ্লেস', descEn: 'Upwork, Fiverr, and other effective marketplaces in one place.', descBn: 'Upwork, Fiverr এবং অন্যান্য কার্যকর মার্কেটপ্লেস এক জায়গায়।' },
+        { emoji: '⚡', titleEn: 'Built for Bangladesh', titleBn: 'বাংলাদেশের জন্য তৈরি', descEn: 'Matched to how local businesses actually hire and get hired.', descBn: 'স্থানীয় ব্যবসা যেভাবে নিয়োগ করে ও নিয়োগ পায় সেভাবে মিলিয়ে তৈরি।' },
       ]}
     >
-      <div className="w-full max-w-2xl mt-6">
-        <p className="text-center text-white/40 text-xs uppercase tracking-wide mb-3">Explore marketplaces meanwhile</p>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          {MARKETPLACES.map((m) => (
-            <a
-              key={m.name}
-              href={m.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-3 bg-white/5 border border-white/10 rounded-2xl p-4 hover:bg-white/10 transition-colors"
-            >
-              <span className="text-2xl flex-shrink-0">{m.emoji}</span>
-              <div className="min-w-0">
-                <p className="text-white font-semibold text-sm">{m.name} ↗</p>
-                <p className="text-gray-400 text-xs leading-relaxed">{m.desc}</p>
-              </div>
-            </a>
-          ))}
-        </div>
-      </div>
+      <MeetAllyMarketplaces />
     </ComingSoonShell>
   )
 }

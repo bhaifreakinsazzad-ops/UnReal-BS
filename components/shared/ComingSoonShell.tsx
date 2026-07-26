@@ -2,18 +2,24 @@
 
 import { useState } from 'react'
 import { CreditCard, HandCoins, Lock, Sparkles, Store } from 'lucide-react'
+import { useLocale } from '@/lib/i18n/context'
 
 interface ComingSoonFeature {
   emoji: string
-  title: string
-  desc: string
+  titleEn: string
+  titleBn: string
+  descEn: string
+  descBn: string
 }
 
 interface ComingSoonShellProps {
   feature: 'opportunities' | 'credit_center' | 'meetally'
-  eyebrow: string
-  headline: string
-  subheadline: string
+  eyebrowEn: string
+  eyebrowBn: string
+  headlineEn: string
+  headlineBn: string
+  subheadlineEn: string
+  subheadlineBn: string
   features: ComingSoonFeature[]
   children?: React.ReactNode
 }
@@ -35,7 +41,22 @@ const FEATURE_ICON = {
 // the original's "if (email) setSubmitted(true)" never saved anything.
 // Optional `children` renders below the waitlist card (e.g. MeetAlly's
 // curated Upwork/Fiverr links, which are real and don't need to wait).
-export function ComingSoonShell({ feature, eyebrow, headline, subheadline, features, children }: ComingSoonShellProps) {
+// Bilingual pairs (xxxEn/xxxBn) are passed by the caller (a Server Component,
+// so it can't read the client-only locale) — this shell picks the right one
+// via useLocale() since it's the client boundary.
+export function ComingSoonShell({
+  feature,
+  eyebrowEn,
+  eyebrowBn,
+  headlineEn,
+  headlineBn,
+  subheadlineEn,
+  subheadlineBn,
+  features,
+  children,
+}: ComingSoonShellProps) {
+  const locale = useLocale()
+  const isBn = locale === 'bn'
   const Icon = FEATURE_ICON[feature]
   const [email, setEmail] = useState('')
   const [submitting, setSubmitting] = useState(false)
@@ -55,11 +76,11 @@ export function ComingSoonShell({ feature, eyebrow, headline, subheadline, featu
       })
       if (!res.ok) {
         const json = await res.json().catch(() => ({}))
-        throw new Error(json?.message ?? 'Could not save your interest.')
+        throw new Error(json?.message ?? (isBn ? 'আপনার আগ্রহ সংরক্ষণ করা যায়নি।' : 'Could not save your interest.'))
       }
       setSubmitted(true)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Could not save your interest.')
+      setError(err instanceof Error ? err.message : isBn ? 'আপনার আগ্রহ সংরক্ষণ করা যায়নি।' : 'Could not save your interest.')
     } finally {
       setSubmitting(false)
     }
@@ -80,25 +101,25 @@ export function ComingSoonShell({ feature, eyebrow, headline, subheadline, featu
 
         <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-[#7C3AED]/20 border border-[#7C3AED]/30 rounded-full mb-4">
           <span className="w-2 h-2 rounded-full bg-[#00C875] animate-pulse" />
-          <span className="text-xs font-semibold text-[#00C875] tracking-wide">{eyebrow}</span>
+          <span className="text-xs font-semibold text-[#00C875] tracking-wide">{isBn ? eyebrowBn : eyebrowEn}</span>
         </div>
 
-        <h1 className="text-3xl md:text-4xl font-bold text-white mb-4 leading-tight">{headline}</h1>
-        <p className="text-gray-400 text-sm md:text-base leading-relaxed">{subheadline}</p>
+        <h1 className="text-3xl md:text-4xl font-bold text-white mb-4 leading-tight">{isBn ? headlineBn : headlineEn}</h1>
+        <p className="text-gray-400 text-sm md:text-base leading-relaxed">{isBn ? subheadlineBn : subheadlineEn}</p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 w-full max-w-2xl mb-10">
         {features.map((f) => (
           <div
-            key={f.title}
+            key={f.titleEn}
             className="relative bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-5 text-center"
           >
             <div className="text-3xl mb-3">{f.emoji}</div>
-            <h3 className="text-white font-semibold text-sm mb-2">{f.title}</h3>
-            <p className="text-gray-400 text-xs leading-relaxed mb-3">{f.desc}</p>
+            <h3 className="text-white font-semibold text-sm mb-2">{isBn ? f.titleBn : f.titleEn}</h3>
+            <p className="text-gray-400 text-xs leading-relaxed mb-3">{isBn ? f.descBn : f.descEn}</p>
             <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-[#7C3AED]/20 border border-[#7C3AED]/30 rounded-full text-[#A78BFA] text-[11px] font-medium">
               <Lock className="w-3 h-3" />
-              Coming Soon
+              {isBn ? 'শীঘ্রই আসছে' : 'Coming Soon'}
             </span>
           </div>
         ))}
@@ -108,13 +129,13 @@ export function ComingSoonShell({ feature, eyebrow, headline, subheadline, featu
         {submitted ? (
           <div>
             <div className="text-4xl mb-3">🎉</div>
-            <h3 className="text-white font-bold mb-2">You&apos;re on the list!</h3>
-            <p className="text-gray-400 text-sm">We&apos;ll email you the moment this launches.</p>
+            <h3 className="text-white font-bold mb-2">{isBn ? 'আপনি তালিকায় আছেন!' : "You're on the list!"}</h3>
+            <p className="text-gray-400 text-sm">{isBn ? 'লঞ্চ হওয়ার সাথে সাথেই আমরা আপনাকে ইমেইল করব।' : "We'll email you the moment this launches."}</p>
           </div>
         ) : (
           <>
-            <h3 className="text-white font-bold mb-1">Want to know first?</h3>
-            <p className="text-gray-400 text-sm mb-4">Leave your email and we&apos;ll notify you at launch.</p>
+            <h3 className="text-white font-bold mb-1">{isBn ? 'সবার আগে জানতে চান?' : 'Want to know first?'}</h3>
+            <p className="text-gray-400 text-sm mb-4">{isBn ? 'আপনার ইমেইল দিন, লঞ্চ হলে আমরা জানাব।' : "Leave your email and we'll notify you at launch."}</p>
             <form onSubmit={handleSubmit} className="flex gap-2">
               <input
                 type="email"
@@ -130,7 +151,7 @@ export function ComingSoonShell({ feature, eyebrow, headline, subheadline, featu
                 disabled={submitting}
                 className="px-4 py-2.5 bg-gradient-to-r from-[#7C3AED] to-[#00C875] text-white text-sm font-semibold rounded-xl hover:opacity-90 transition-opacity disabled:opacity-50"
               >
-                {submitting ? '...' : 'Notify me'}
+                {submitting ? '...' : isBn ? 'জানান' : 'Notify me'}
               </button>
             </form>
             {error && <p className="mt-3 text-xs text-red-400">{error}</p>}
