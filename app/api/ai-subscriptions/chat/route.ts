@@ -38,6 +38,30 @@ function round2(n: number): number {
   return Math.round(n * 100) / 100
 }
 
+const MAX_OUTPUT_TOKENS = 1024
+
+// Deliberately pessimistic. English averages ~4 characters per token; using 3
+// over-estimates the input, so the pre-flight gate errs toward rejecting a
+// request we might not be able to charge for, never toward letting an
+// unaffordable one reach a paid provider.
+const CHARS_PER_TOKEN_ESTIMATE = 3
+
+interface ModelRate {
+  input_rate_bdt_per_1k: number | string
+  output_rate_bdt_per_1k: number | string
+  markup_multiplier: number | string
+}
+
+// Worst-case cost of a request BEFORE it is sent upstream: all prompt
+// characters as input, plus a full maxTokens response.
+function estimateCostBdt(promptChars: number, rate: ModelRate): number {
+  const estInputTokens = Math.ceil(promptChars / CHARS_PER_TOKEN_ESTIMATE)
+  return round2(
+    (estInputTokens / 1000) * Number(rate.input_rate_bdt_per_1k) * Number(rate.markup_multiplier) +
+      (MAX_OUTPUT_TOKENS / 1000) * Number(rate.output_rate_bdt_per_1k) * Number(rate.markup_multiplier)
+  )
+}
+
 async function requireUserId() {
   const session = await auth()
   const email = session?.user?.email
@@ -87,21 +111,22 @@ export async function POST(request: Request) {
 
     const supabase = getSupabaseAdmin()
 
+    // Explicit column list rather than select('*') so that schema drift fails
+    // loudly here instead of silently disabling a money guard. The previous
+    // `rate.active_until` check below read a column that has never existed, so
+    // it was always undefined and the model-retirement guard never once fired.
     const { data: rate, error: rateError } = await supabase
       .from('unreal_bs_ai_model_rates')
-      .select('*')
+      .select('id, provider, model_id, display_name, input_rate_bdt_per_1k, output_rate_bdt_per_1k, markup_multiplier')
       .eq('model_id', modelId)
       .eq('is_active', true)
       .maybeSingle()
 
-    if (rateError) return NextResponse.json({ message: DB_NOT_READY_MESSAGE }, { status: 502 })
-    if (!rate) return NextResponse.json({ message: 'Unknown or inactive model.' }, { status: 400 })
-    if (rate.active_until && new Date(rate.active_until) <= new Date()) {
-      return NextResponse.json(
-        { message: 'This model is no longer available. Refresh the model list and pick another.' },
-        { status: 400 }
-      )
+    if (rateError) {
+      await logError('ai-subscriptions-chat-rate-lookup', rateError, { userId, modelId })
+      return NextResponse.json({ message: DB_NOT_READY_MESSAGE }, { status: 502 })
     }
+    if (!rate) return NextResponse.json({ message: 'Unknown or inactive model.' }, { status: 400 })
 
     const { data: wallet, error: walletError } = await supabase
       .from('unreal_bs_wallets')
@@ -111,7 +136,13 @@ export async function POST(request: Request) {
 
     if (walletError) return NextResponse.json({ message: DB_NOT_READY_MESSAGE }, { status: 502 })
 
-    if (!wallet || Number(wallet.balance_bdt) <= 0) {
+    // Cheap early exit. The real affordability gate is the estimate below —
+    // this check alone used to be the ONLY one, which meant a wallet holding
+    // ৳0.01 could drive unlimited paid upstream calls, because the charge was
+    // only attempted after the provider had already billed us and a failed
+    // charge left the balance untouched.
+    const balanceBdt = wallet ? Number(wallet.balance_bdt) : 0
+    if (!wallet || balanceBdt <= 0) {
       return NextResponse.json(
         { message: 'Insufficient balance. Please top up before chatting.' },
         { status: 402 }
@@ -148,6 +179,27 @@ export async function POST(request: Request) {
           await logError('ai-subscriptions-chat-tavily-search-failed', err, { userId, modelId })
         }
       }
+    }
+
+    // ── Affordability gate ────────────────────────────────────────────────
+    // Nothing above this point has cost money. Estimate the worst-case charge
+    // for THIS request (including the system prompt and any search context we
+    // just built) and refuse unless the wallet covers it. Without this, a
+    // request that cannot be paid for still reaches a paid provider and we
+    // absorb the bill.
+    const promptChars =
+      SYSTEM_PROMPT.length +
+      (searchContextMessage?.content.length ?? 0) +
+      messages.reduce((n, m) => n + m.content.length, 0)
+    const estimatedCostBdt = estimateCostBdt(promptChars, rate)
+
+    if (balanceBdt < estimatedCostBdt) {
+      return NextResponse.json(
+        {
+          message: `This message could cost up to ৳${estimatedCostBdt.toFixed(2)} and your balance is ৳${balanceBdt.toFixed(2)}. Please top up, or send a shorter message.`,
+        },
+        { status: 402 }
+      )
     }
 
     let providerResponse
@@ -187,7 +239,23 @@ export async function POST(request: Request) {
     })
 
     if (debitError) {
-      await logError('ai-subscriptions-chat-debit-race', debitError, { userId, costBdt })
+      // The provider has ALREADY billed us at this point and the user's balance
+      // is unchanged, so this is real money leaving the business. The
+      // pre-flight estimate above should make it rare, but it is still possible
+      // (concurrent spend between the estimate and the debit, or an actual
+      // response far larger than estimated). Logged as UNBILLED-LEAK so it can
+      // be grepped and reconciled against the provider invoice.
+      //
+      // TODO: also write a status='failed' row to unreal_bs_ai_usage_ledger.
+      // Blocked today because that table's NOT NULL wallet_id references the
+      // legacy unreal_bs_ai_wallets, which migration 0004 superseded with
+      // unreal_bs_wallets — see the duplicate unreal_bs_ai_debit_wallet
+      // definitions in 0003 and 0004. Needs a migration to resolve first.
+      await logError(
+        'ai-subscriptions-chat-UNBILLED-LEAK',
+        debitError,
+        { userId, modelId, provider: rate.provider, costBdt, estimatedCostBdt, balanceBeforeBdt: balanceBdt }
+      )
       return NextResponse.json(
         { message: 'Insufficient balance for this response. Please top up.' },
         { status: 402 }

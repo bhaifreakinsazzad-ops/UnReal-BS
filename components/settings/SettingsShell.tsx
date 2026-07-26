@@ -265,13 +265,22 @@ function ErrorLogsCard({ isBn }: { isBn: boolean }) {
   const [logs, setLogs] = useState<ErrorLog[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(false)
+  // The endpoint is admin-only and answers 404 to everyone else. Hide the whole
+  // card in that case rather than showing a non-admin a broken panel.
+  const [forbidden, setForbidden] = useState(false)
 
   useEffect(() => {
     let cancelled = false
     fetch('/api/settings/error-logs')
-      .then((res) => (res.ok ? res.json() : Promise.reject(new Error('failed'))))
-      .then((json: { logs: ErrorLog[] }) => {
-        if (!cancelled) setLogs(json.logs ?? [])
+      .then((res) => {
+        if (res.status === 404) {
+          if (!cancelled) setForbidden(true)
+          return null
+        }
+        return res.ok ? res.json() : Promise.reject(new Error('failed'))
+      })
+      .then((json: { logs: ErrorLog[] } | null) => {
+        if (!cancelled && json) setLogs(json.logs ?? [])
       })
       .catch(() => {
         if (!cancelled) setError(true)
@@ -283,6 +292,8 @@ function ErrorLogsCard({ isBn }: { isBn: boolean }) {
       cancelled = true
     }
   }, [])
+
+  if (forbidden) return null
 
   return (
     <Card padding="none" className="overflow-hidden border-gray-200">

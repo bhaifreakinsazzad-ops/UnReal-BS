@@ -30,10 +30,19 @@ async function requireUserId() {
   }
 }
 
-// One-time reveal: decrypts and atomically clears the stored credential in a
-// single DB statement (unreal_bs_reveal_card_credential), so it is
-// physically impossible to reveal the same card twice, even under
-// concurrent requests. The plaintext is returned once and never logged.
+// One-time reveal, ordered so that nothing is destroyed until the plaintext is
+// known to be recoverable:
+//   1. read the ciphertext (no mutation),
+//   2. decrypt it — if this throws (missing / rotated / wrong-length
+//      CARD_CREDENTIAL_ENC_KEY) we bail out with the record still intact,
+//   3. only then call unreal_bs_reveal_card_credential, whose
+//      SELECT ... FOR UPDATE ... WHERE credential_revealed_at IS NULL still
+//      provides the atomic single-use guarantee under concurrency.
+//
+// The previous order cleared the ciphertext first and decrypted afterwards, so
+// a rotated key — or a customer whose mobile connection dropped before the
+// response arrived — permanently destroyed a card they had already paid for,
+// with no way to recover or re-send it.
 export async function GET(_request: Request, { params }: { params: Promise<{ cardId: string }> }) {
   const resolved = await requireUserId()
   if (resolved.error) return resolved.error
@@ -45,7 +54,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ car
 
     const { data: card, error: cardError } = await supabase
       .from('unreal_bs_virtual_cards')
-      .select('id, credential_revealed_at')
+      .select('id, credential_revealed_at, credential_secret_encrypted')
       .eq('id', cardId)
       .eq('assigned_user_id', userId)
       .maybeSingle()
@@ -62,6 +71,33 @@ export async function GET(_request: Request, { params }: { params: Promise<{ car
       )
     }
 
+    if (!card.credential_secret_encrypted) {
+      return NextResponse.json(
+        { message: 'This card is not ready yet. Please contact support.' },
+        { status: 410 }
+      )
+    }
+
+    // Step 2 — prove the credential is recoverable BEFORE anything is cleared.
+    // A decryption failure here leaves the stored ciphertext untouched, so the
+    // customer can retry once the key problem is fixed.
+    let plaintext: string
+    try {
+      plaintext = decryptCardCredential(card.credential_secret_encrypted)
+    } catch (err) {
+      await logError('virtual-cards-reveal-decrypt-failed', err, { userId, cardId })
+      return NextResponse.json(
+        {
+          message:
+            'We could not decrypt this card right now. Your card has NOT been used up — please contact support and try again.',
+        },
+        { status: 503 }
+      )
+    }
+
+    // Step 3 — now consume it. The RPC re-checks credential_revealed_at under
+    // a row lock, so if a concurrent request won the race this returns nothing
+    // and we must not hand out the plaintext we decrypted above.
     const { data: encrypted, error: revealError } = await supabase.rpc('unreal_bs_reveal_card_credential', {
       p_card_id: card.id,
     })
@@ -73,7 +109,6 @@ export async function GET(_request: Request, { params }: { params: Promise<{ car
       )
     }
 
-    const plaintext = decryptCardCredential(encrypted)
     return NextResponse.json({ credential: plaintext })
   } catch (err) {
     await logError('virtual-cards-reveal-route-get', err, { userId, cardId })

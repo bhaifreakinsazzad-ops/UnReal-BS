@@ -9,6 +9,12 @@ import { logError } from '@/lib/log-error'
 
 const LOCATION_ID = process.env.GHL_LOCATION_ID!
 
+// This page reads the session and live GHL data on every request. Declaring it
+// dynamic stops Next from attempting a static render, which would otherwise
+// throw its internal bail-out exception into the GHL catch block below and get
+// logged as if it were a real fetch failure.
+export const dynamic = 'force-dynamic'
+
 async function getRealMoneySnapshot() {
   if (!isSupabaseConfigured()) return { walletBalance: null, udharOutstanding: null }
 

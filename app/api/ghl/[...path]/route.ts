@@ -15,7 +15,11 @@ const allowedRoutes: Array<{
   { method: 'POST', pattern: /^\/contacts\/upsert$/, versions: ['v3'] },
   { method: 'GET', pattern: /^\/contacts\/[^/]+$/ },
   { method: 'PUT', pattern: /^\/contacts\/[^/]+$/ },
-  { method: 'DELETE', pattern: /^\/contacts\/[^/]+$/ },
+  // DELETE /contacts/{id} deliberately NOT allow-listed. Nothing in the app
+  // calls it, and this proxy only authenticates — it does not verify that the
+  // id belongs to the caller. With every tenant sharing one GHL location, an
+  // allow-listed DELETE lets any signed-in user destroy another merchant's
+  // contacts. Do not re-add without server-side ownership verification.
   { method: 'POST', pattern: /^\/contacts\/[^/]+\/tags$/ },
   { method: 'GET', pattern: /^\/conversations\/search$/ },
   { method: 'GET', pattern: /^\/conversations\/[^/]+\/messages$/ },
@@ -26,7 +30,9 @@ const allowedRoutes: Array<{
   { method: 'GET', pattern: /^\/funnels\/funnel\/list$/ },
   { method: 'GET', pattern: /^\/funnels\/[^/]+\/pages$/ },
   { method: 'GET', pattern: /^\/locations\/[^/]+$/ },
-  { method: 'PUT', pattern: /^\/locations\/[^/]+$/ },
+  // PUT /locations/{id} deliberately NOT allow-listed — same reasoning as
+  // DELETE /contacts above. Nothing calls it, and it would let any signed-in
+  // user rewrite the shared location every tenant depends on.
   { method: 'GET', pattern: /^\/locations\/[^/]+\/stats$/ },
   { method: 'GET', pattern: /^\/opportunities\/pipelines$/ },
   { method: 'GET', pattern: /^\/opportunities\/search$/ },
