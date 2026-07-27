@@ -24,7 +24,14 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         // leaks that the limiter (rather than a wrong password) is why the
         // attempt failed, which would itself be an information-disclosure /
         // account-enumeration risk.
-        const { allowed } = await checkRateLimit('login', email, { max: 10, windowSeconds: 900 })
+        // failClosed: the whole product sits behind one shared admin
+        // credential, so if the limiter itself breaks we must refuse logins
+        // rather than hand an attacker an unthrottled brute-force window.
+        const { allowed } = await checkRateLimit('login', email, {
+          max: 10,
+          windowSeconds: 900,
+          failClosed: true,
+        })
         if (!allowed) return null
 
         // Try real user accounts first. If Supabase isn't configured, the

@@ -56,6 +56,13 @@ export async function createDepositRequest(
     .select()
     .single()
 
+  // 23505 = unique_violation. Migration 0007 adds a partial unique index
+  // allowing only one pending request per user, which closes the race the
+  // read-then-insert check above cannot: two taps 200ms apart both passed the
+  // check and created two identical pending claims, each separately
+  // approvable — crediting one real bKash payment twice. Treat the constraint
+  // firing as the same user-facing outcome as the soft check.
+  if (error?.code === '23505') return { pendingConflict: true as const }
   if (error) return { error }
 
   // Best-effort GHL notification — the DB row above is the source of truth,

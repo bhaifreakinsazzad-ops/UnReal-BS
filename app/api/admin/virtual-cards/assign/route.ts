@@ -117,8 +117,30 @@ export async function POST(request: Request) {
 
     if (cardError) {
       await logError('admin-virtual-cards-assign-card-insert', cardError, { orderId })
+      // Refund immediately. Without this the customer stayed debited while the
+      // order stayed 'pending' — so it reappeared in the queue and a retry
+      // charged them a second time for one card.
+      const { error: refundError } = await supabase.rpc('unreal_bs_credit_wallet_generic', {
+        p_user_id: order.user_id,
+        p_amount_bdt: chargedAmountBdt,
+        p_kind: 'card_refund',
+        p_reference_type: 'virtual_card_order',
+        p_reference_id: orderId,
+        p_note: `Auto-refund: card creation failed for ${label}`,
+      })
+      if (refundError) {
+        await logError('admin-virtual-cards-assign-REFUND-FAILED', refundError, {
+          orderId,
+          userId: order.user_id,
+          chargedAmountBdt,
+        })
+        return NextResponse.json(
+          { message: 'Card creation failed AND the automatic refund failed. Do NOT retry — resolve manually, the customer is still debited.' },
+          { status: 500 }
+        )
+      }
       return NextResponse.json(
-        { message: 'Wallet was debited but card creation failed — check logs and resolve manually.' },
+        { message: 'Card creation failed. The customer has been automatically refunded — you can safely retry.' },
         { status: 500 }
       )
     }
@@ -134,11 +156,29 @@ export async function POST(request: Request) {
       .eq('id', orderId)
 
     if (fulfillError) {
-      await logError('admin-virtual-cards-assign-order-update', fulfillError, { orderId })
-      return NextResponse.json(
-        { message: 'Card was created but the order status update failed — check logs and resolve manually.' },
-        { status: 500 }
-      )
+      // The card EXISTS and is assigned to the customer, and they have been
+      // charged correctly — only the order's status flag is stale. Do NOT
+      // refund here. Retry once; if it still fails, say plainly that retrying
+      // the assignment would issue a second card and charge again.
+      const { error: retryError } = await supabase
+        .from('unreal_bs_virtual_card_orders')
+        .update({
+          status: 'fulfilled',
+          card_id: card.id,
+          charged_amount_bdt: chargedAmountBdt,
+          fulfilled_at: new Date().toISOString(),
+        })
+        .eq('id', orderId)
+
+      if (retryError) {
+        await logError('admin-virtual-cards-assign-order-update', retryError, { orderId, cardId: card.id })
+        return NextResponse.json(
+          {
+            message: `Card ${card.id} was created and the customer was charged correctly, but this order still shows as pending. Do NOT assign again — that would issue a second card and charge twice. Mark order ${orderId} fulfilled manually.`,
+          },
+          { status: 500 }
+        )
+      }
     }
 
     return NextResponse.json({ cardId: card.id })

@@ -109,6 +109,12 @@ export async function POST(request: Request) {
       .select()
       .single()
 
+    // 23505 = unique_violation from the partial unique index added in
+    // migration 0007 (one pending order per user). Closes the double-tap race
+    // the read-then-insert check above cannot.
+    if (error?.code === '23505') {
+      return NextResponse.json({ message: 'You already have a pending card order.' }, { status: 409 })
+    }
     if (error) return NextResponse.json({ message: DB_NOT_READY_MESSAGE }, { status: 502 })
 
     if (LOCATION_ID) {

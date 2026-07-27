@@ -222,7 +222,26 @@ export async function POST(request: Request) {
       )
     }
 
-    const { usage } = providerResponse
+    // Eight of the nine provider adapters coerce a missing usage object to
+    // `?? 0`, and HuggingFace/Cohere type it as optional. A 0/0 usage with real
+    // content meant cost rounded to ৳0.00, the charge "succeeded" against any
+    // balance, and a ledger row was written claiming zero tokens — we paid the
+    // provider, billed the customer nothing, and recorded a falsified entry in
+    // the table the migration calls the source of truth for disputes.
+    // Estimating here covers every adapter, present and future, in one place.
+    let usage = providerResponse.usage
+    if (usage.inputTokens === 0 && usage.outputTokens === 0 && providerResponse.content.trim().length > 0) {
+      usage = {
+        inputTokens: Math.ceil(promptChars / CHARS_PER_TOKEN_ESTIMATE),
+        outputTokens: Math.ceil(providerResponse.content.length / CHARS_PER_TOKEN_ESTIMATE),
+      }
+      await logError(
+        'ai-usage-estimated-provider-reported-none',
+        new Error('Provider returned no usage data; billed on character estimate'),
+        { userId, modelId, provider: rate.provider, estimated: usage }
+      )
+    }
+
     const costBdt = round2(
       (usage.inputTokens / 1000) * Number(rate.input_rate_bdt_per_1k) * Number(rate.markup_multiplier) +
         (usage.outputTokens / 1000) * Number(rate.output_rate_bdt_per_1k) * Number(rate.markup_multiplier)
