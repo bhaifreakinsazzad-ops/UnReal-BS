@@ -1,7 +1,12 @@
 import { IntegrationsShell } from '@/components/integrations/IntegrationsShell'
+import { getTenantLocationId } from '@/lib/tenant'
+import { WorkspaceNotConnected } from '@/components/shared/WorkspaceNotConnected'
 
-const LOCATION_ID = process.env.GHL_LOCATION_ID!
+export const dynamic = 'force-dynamic'
 
-export default function IntegrationsPage() {
-  return <IntegrationsShell locationId={LOCATION_ID} />
+export default async function IntegrationsPage() {
+  const locationId = await getTenantLocationId()
+  if (!locationId) return <WorkspaceNotConnected feature="Integrations" />
+
+  return <IntegrationsShell locationId={locationId} />
 }

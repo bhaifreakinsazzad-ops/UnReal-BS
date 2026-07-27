@@ -2,6 +2,7 @@
 
 import { Suspense, useState } from 'react'
 import Image from 'next/image'
+import Link from 'next/link'
 import { signIn } from 'next-auth/react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Loader2, ShieldCheck } from 'lucide-react'
@@ -80,7 +81,7 @@ function LoginForm() {
             </div>
             <h2 className="text-white font-bold text-xl mb-1">Sign in to your workspace</h2>
             <p className="text-gray-400 text-sm">
-              Access is provisioned by the workspace owner. There is no public self-registration on this portal.
+              Welcome back. Enter your details to reach your wallet, khata and inbox.
             </p>
           </div>
 
@@ -131,6 +132,13 @@ function LoginForm() {
             {loading && <Loader2 className="w-4 h-4 animate-spin" />}
             Sign In
           </button>
+
+          <p className="text-center text-xs text-gray-500">
+            New here?{' '}
+            <Link href="/signup" className="text-[#D8B86A] hover:underline font-semibold">
+              Create a free account
+            </Link>
+          </p>
         </form>
 
         <p className="text-center text-xs text-gray-600 mt-6">

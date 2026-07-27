@@ -10,6 +10,7 @@ export default auth((req) => {
 
   const isPublic =
     pathname.startsWith('/login') ||
+    pathname.startsWith('/signup') ||
     pathname.startsWith('/unreal-bs') ||
     pathname.startsWith('/apply') ||
     pathname.startsWith('/terms') ||

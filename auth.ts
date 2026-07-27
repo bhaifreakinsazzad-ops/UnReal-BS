@@ -13,7 +13,14 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         password: { label: 'Password', type: 'password' },
       },
       async authorize(credentials) {
-        const email = typeof credentials?.email === 'string' ? credentials.email : undefined
+        // Normalised the same way registration stores it
+        // (app/api/auth/register/route.ts lowercases via zod). Without this a
+        // user who registers as "Shop@Example.com" and later types
+        // "shop@example.com" — or the reverse — fails the lookup and cannot
+        // sign in at all. Also keeps the rate-limit key consistent so case
+        // variations can't be used to multiply the allowance.
+        const rawEmail = typeof credentials?.email === 'string' ? credentials.email : undefined
+        const email = rawEmail?.trim().toLowerCase()
         const password = typeof credentials?.password === 'string' ? credentials.password : undefined
 
         if (!email || !password) return null
@@ -61,7 +68,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           }
         }
 
-        const adminEmail = process.env.ADMIN_EMAIL
+        const adminEmail = process.env.ADMIN_EMAIL?.trim().toLowerCase()
         const adminPassword = process.env.ADMIN_PASSWORD
 
         if (!adminEmail || !adminPassword) {
@@ -69,6 +76,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           return null
         }
 
+        // Email is compared case-insensitively (both sides normalised); the
+        // password is still an exact match.
         if (email === adminEmail && password === adminPassword) {
           return { id: '1', name: 'Admin', email: adminEmail }
         }

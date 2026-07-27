@@ -1,9 +1,14 @@
 import { SitesShell } from '@/components/sites/SitesShell'
 import { getFunnels } from '@/lib/ghl/sites'
+import { getTenantLocationId } from '@/lib/tenant'
+import { WorkspaceNotConnected } from '@/components/shared/WorkspaceNotConnected'
 
-const LOCATION_ID = process.env.GHL_LOCATION_ID!
+export const dynamic = 'force-dynamic'
 
 export default async function SitesPage() {
-  const { funnels, count } = await getFunnels(LOCATION_ID, 50)
-  return <SitesShell funnels={funnels} total={count} locationId={LOCATION_ID} />
+  const locationId = await getTenantLocationId()
+  if (!locationId) return <WorkspaceNotConnected feature="Sites & Funnels" />
+
+  const { funnels, count } = await getFunnels(locationId, 50)
+  return <SitesShell funnels={funnels} total={count} locationId={locationId} />
 }

@@ -9,10 +9,10 @@ import {
 } from '@/lib/ghl/agent-studio'
 import { GHLRequestError } from '@/lib/ghl/client'
 import { logError } from '@/lib/log-error'
+import { getTenantLocationId } from '@/lib/tenant'
 
 export const dynamic = 'force-dynamic'
 
-const locationId = process.env.GHL_LOCATION_ID
 const supportedVoiceLanguages = new Set<CreateVoiceAgentInput['language']>([
   'en-US',
   'multi',
@@ -59,7 +59,8 @@ async function handleGhlError(error: unknown) {
 
 export async function GET() {
   if (!await requireSession()) return jsonError(401, 'Authentication required.')
-  if (!locationId) return jsonError(500, 'GHL location is not configured.')
+  const locationId = await getTenantLocationId()
+  if (!locationId) return jsonError(409, 'No workspace is connected to this account yet.')
 
   try {
     return NextResponse.json(await getAgentStudioSnapshot(locationId), {
@@ -72,7 +73,8 @@ export async function GET() {
 
 export async function POST(request: NextRequest) {
   if (!await requireSession()) return jsonError(401, 'Authentication required.')
-  if (!locationId) return jsonError(500, 'GHL location is not configured.')
+  const locationId = await getTenantLocationId()
+  if (!locationId) return jsonError(409, 'No workspace is connected to this account yet.')
 
   const body = await request.json().catch(() => null) as { action?: string; input?: unknown } | null
   if (!body?.action) return jsonError(400, 'Action is required.')
@@ -100,7 +102,8 @@ export async function POST(request: NextRequest) {
 
 export async function PATCH(request: NextRequest) {
   if (!await requireSession()) return jsonError(401, 'Authentication required.')
-  if (!locationId) return jsonError(500, 'GHL location is not configured.')
+  const locationId = await getTenantLocationId()
+  if (!locationId) return jsonError(409, 'No workspace is connected to this account yet.')
 
   const body = await request.json().catch(() => null) as {
     agentId?: string

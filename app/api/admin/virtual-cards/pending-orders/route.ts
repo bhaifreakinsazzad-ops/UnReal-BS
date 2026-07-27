@@ -11,8 +11,8 @@ const DB_NOT_READY_MESSAGE =
 async function requireAdmin() {
   const session = await auth()
   const email = session?.user?.email
-  const adminEmail = process.env.ADMIN_EMAIL
-  if (!email || !adminEmail || email !== adminEmail) {
+  const adminEmail = process.env.ADMIN_EMAIL?.trim().toLowerCase()
+  if (!email || !adminEmail || email.trim().toLowerCase() !== adminEmail) {
     return { error: NextResponse.json({ message: 'Not found.' }, { status: 404 }) }
   }
   if (!isSupabaseConfigured()) {

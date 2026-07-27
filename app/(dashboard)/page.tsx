@@ -6,8 +6,7 @@ import { auth } from '@/auth'
 import { getSupabaseAdmin, isSupabaseConfigured } from '@/lib/supabase/client'
 import { resolveUserIdByEmail } from '@/lib/supabase/user'
 import { logError } from '@/lib/log-error'
-
-const LOCATION_ID = process.env.GHL_LOCATION_ID!
+import { getTenantLocationId } from '@/lib/tenant'
 
 // This page reads the session and live GHL data on every request. Declaring it
 // dynamic stops Next from attempting a static render, which would otherwise
@@ -53,17 +52,24 @@ export default async function DashboardPage() {
   let totalConversations: number | null = null
   let pipelineRevenue: number | null = null
 
-  try {
-    const [contactsRes, convsRes, oppsRes] = await Promise.all([
-      getContacts(LOCATION_ID, 1),
-      getConversations(LOCATION_ID, 1),
-      getOpportunities(LOCATION_ID).catch(() => ({ opportunities: [] })),
-    ])
-    totalContacts = contactsRes.meta.total
-    totalConversations = convsRes.total
-    pipelineRevenue = oppsRes.opportunities.reduce((sum, o) => sum + (o.monetaryValue || 0), 0)
-  } catch (err) {
-    await logError('dashboard-ghl-fetch', err)
+  // Per-tenant. A user with no workspace provisioned simply gets null CRM
+  // stats (rendered as an em-dash) rather than another merchant's numbers.
+  // Their wallet and Udhar Khata figures below are their own regardless.
+  const locationId = await getTenantLocationId()
+
+  if (locationId) {
+    try {
+      const [contactsRes, convsRes, oppsRes] = await Promise.all([
+        getContacts(locationId, 1),
+        getConversations(locationId, 1),
+        getOpportunities(locationId).catch(() => ({ opportunities: [] })),
+      ])
+      totalContacts = contactsRes.meta.total
+      totalConversations = convsRes.total
+      pipelineRevenue = oppsRes.opportunities.reduce((sum, o) => sum + (o.monetaryValue || 0), 0)
+    } catch (err) {
+      await logError('dashboard-ghl-fetch', err)
+    }
   }
 
   const { walletBalance, udharOutstanding } = await getRealMoneySnapshot()

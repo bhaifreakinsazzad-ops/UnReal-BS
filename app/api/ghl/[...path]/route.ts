@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/auth'
+import { getTenantLocationId } from '@/lib/tenant'
 
 const GHL_BASE_URL = 'https://services.leadconnectorhq.com'
 const GHL_TOKEN = process.env.GHL_PRIVATE_TOKEN
-const GHL_LOCATION_ID = process.env.GHL_LOCATION_ID
 
 const allowedRoutes: Array<{
   method: string
@@ -88,8 +88,21 @@ async function proxyRequest(
   if (!GHL_TOKEN) {
     return NextResponse.json({ error: 'GHL token not configured' }, { status: 500 })
   }
-  if (!GHL_LOCATION_ID) {
-    return NextResponse.json({ error: 'GHL location not configured' }, { status: 500 })
+
+  // Per-tenant location. Previously every authenticated caller was served the
+  // single env-configured GHL_LOCATION_ID, so any signed-in user read and
+  // wrote the same shared sub-account — a cross-tenant leak the moment more
+  // than one person can sign up. A user with no workspace provisioned gets a
+  // clean 409 rather than somebody else's CRM.
+  const tenantLocationId = await getTenantLocationId()
+  if (!tenantLocationId) {
+    return NextResponse.json(
+      {
+        error: 'No workspace connected to this account yet.',
+        code: 'NO_WORKSPACE',
+      },
+      { status: 409 }
+    )
   }
 
   const { path } = await paramsPromise
@@ -104,7 +117,16 @@ async function proxyRequest(
     return NextResponse.json({ error: 'Method is not allowed for this GHL route' }, { status: 405 })
   }
 
-  const searchParams = request.nextUrl.searchParams.toString()
+  // Many GHL endpoints accept locationId as a QUERY parameter, and the client's
+  // query string is forwarded verbatim. Without this override a caller could
+  // simply append ?locationId=<someone else's location> and read another
+  // tenant's data despite the header being set correctly. Force it to the
+  // resolved tenant on every request.
+  const forwardedParams = new URLSearchParams(request.nextUrl.searchParams)
+  if (forwardedParams.has('locationId')) {
+    forwardedParams.set('locationId', tenantLocationId)
+  }
+  const searchParams = forwardedParams.toString()
   const url = `${GHL_BASE_URL}${pathname}${searchParams ? '?' + searchParams : ''}`
   const version = allowedRoute.versions?.[0] ?? '2021-07-28'
 
@@ -112,7 +134,7 @@ async function proxyRequest(
     'Authorization': `Bearer ${GHL_TOKEN}`,
     'Version': version,
     'Content-Type': 'application/json',
-    'locationId': GHL_LOCATION_ID,
+    'locationId': tenantLocationId,
   }
 
   const body = method !== 'GET' && method !== 'DELETE'
