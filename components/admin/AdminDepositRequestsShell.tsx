@@ -13,6 +13,8 @@ interface DepositRequest {
   businessName: string | null
   email: string | null
   requestedAmountBdt: number
+  bundleCode: string | null
+  bundleCreditBdt: number | null
   method: string | null
   note: string | null
   createdAt: string
@@ -52,7 +54,9 @@ export function AdminDepositRequestsShell() {
       .then((json: { requests: DepositRequest[] }) => {
         const list = json.requests ?? []
         setRequests(list)
-        setAmounts(Object.fromEntries(list.map((r) => [r.id, String(r.requestedAmountBdt)])))
+        // Pre-fill the CREDIT for bundle purchases (price + bonus), otherwise
+        // approving at the paid amount would silently drop the customer's bonus.
+        setAmounts(Object.fromEntries(list.map((r) => [r.id, String(r.bundleCreditBdt ?? r.requestedAmountBdt)])))
       })
       .catch(() => setError('Could not load pending deposit requests.'))
       .finally(() => setLoading(false))
@@ -139,15 +143,28 @@ export function AdminDepositRequestsShell() {
                         {r.businessName ?? r.email ?? r.userId}
                       </p>
                       <p className="text-xs text-gray-500">
-                        Requested {formatBDT(r.requestedAmountBdt)}
+                        {r.bundleCode ? (
+                          <>
+                            <span className="font-semibold uppercase text-[#7C3AED]">{r.bundleCode}</span>
+                            {' package · paid '}{formatBDT(r.requestedAmountBdt)}
+                            {' → credit '}<strong>{formatBDT(r.bundleCreditBdt ?? r.requestedAmountBdt)}</strong>
+                          </>
+                        ) : (
+                          <>Requested {formatBDT(r.requestedAmountBdt)}</>
+                        )}
                         {r.method ? ` · ${r.method}` : ''} · {formatDateTime(r.createdAt)}
                       </p>
+                      {r.bundleCode && (
+                        <p className="mt-1 text-[11px] text-amber-700">
+                          Confirm {formatBDT(r.requestedAmountBdt)} actually arrived — the field below credits the package amount including the bonus.
+                        </p>
+                      )}
                       {r.note && <p className="mt-1 text-xs text-gray-500">Note: {r.note}</p>}
                     </div>
                     <div className="flex items-end gap-2">
                       <div className="w-36">
                         <Input
-                          label="Amount received (৳)"
+                          label="Credit to wallet (৳)"
                           type="number"
                           min={1}
                           value={amounts[r.id] ?? ''}

@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { WalletBalanceChip } from '@/components/wallet/WalletBalanceChip'
 import { DepositRequestCard } from '@/components/wallet/DepositRequestCard'
+import { BundlePicker } from '@/components/wallet/BundlePicker'
 import { useLocale } from '@/lib/i18n/context'
 
 // Metered, wallet-based chat against real provider models (OpenAI/Anthropic/
@@ -313,7 +314,8 @@ export function AISubscriptionsShell() {
         </div>
       </Card>
 
-      <div ref={topupSectionRef}>
+      <div ref={topupSectionRef} className="space-y-4">
+        <BundlePicker />
         <DepositRequestCard />
       </div>
     </div>

@@ -54,7 +54,7 @@ export async function GET() {
     const supabase = getSupabaseAdmin()
     const { data, error } = await supabase
       .from('unreal_bs_deposit_requests')
-      .select('id, user_id, requested_amount_bdt, method, note, created_at, unreal_bs_users(business_name, email)')
+      .select('id, user_id, requested_amount_bdt, bundle_code, bundle_credit_bdt, method, note, created_at, unreal_bs_users(business_name, email)')
       .eq('status', 'pending')
       .order('created_at', { ascending: true })
 
@@ -72,6 +72,11 @@ export async function GET() {
           businessName: user?.business_name ?? null,
           email: user?.email ?? null,
           requestedAmountBdt: Number(r.requested_amount_bdt),
+          // Bundle purchases credit MORE than the customer paid — the bonus is
+          // the bulk discount. The admin UI must pre-fill the credit, not the
+          // price, or the customer silently loses their bonus.
+          bundleCode: r.bundle_code ?? null,
+          bundleCreditBdt: r.bundle_credit_bdt != null ? Number(r.bundle_credit_bdt) : null,
           method: r.method,
           note: r.note,
           createdAt: r.created_at,

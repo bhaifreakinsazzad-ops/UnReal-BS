@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { ArrowRight, Banknote, CreditCard, Sparkles, Users } from 'lucide-react'
+import { ArrowRight, Banknote, CreditCard, Package, Sparkles, Users } from 'lucide-react'
 import { auth } from '@/auth'
 import { Badge } from '@/components/ui/badge'
 
@@ -38,6 +38,13 @@ const TOOLS = [
     desc: 'What you charge for metered AI, per model. Review whenever a provider changes its prices.',
     icon: Sparkles,
     tone: 'bg-[#FFF5D8] text-[#A87925]',
+  },
+  {
+    href: '/admin/bundles',
+    title: 'AI Packages',
+    desc: 'The prepaid packages customers buy. Shows the exact worst-case provider cost and profit for each one.',
+    icon: Package,
+    tone: 'bg-[#FFE9F0] text-[#BE185D]',
   },
 ]
 

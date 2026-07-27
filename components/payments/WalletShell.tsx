@@ -6,6 +6,7 @@ import { cn } from '@/lib/utils'
 import { useLocale } from '@/lib/i18n/context'
 import { WalletBalanceChip, formatBDT } from '@/components/wallet/WalletBalanceChip'
 import { DepositRequestCard } from '@/components/wallet/DepositRequestCard'
+import { BundlePicker } from '@/components/wallet/BundlePicker'
 
 interface LedgerEntry {
   id: string
@@ -115,7 +116,12 @@ export function WalletShell() {
       </div>
 
       <div className="p-4 space-y-4">
-        {tab === 'deposit' && <DepositRequestCard />}
+        {tab === 'deposit' && (
+          <>
+            <BundlePicker onOrdered={() => setReloadKey((k) => k + 1)} />
+            <DepositRequestCard />
+          </>
+        )}
 
         {tab === 'history' && (
           <div className="space-y-3">
