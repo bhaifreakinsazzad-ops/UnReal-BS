@@ -17,7 +17,7 @@ const contactSchema = z.object({
 })
 
 const entrySchema = z.object({
-  contactId: z.string().trim().min(1),
+  contactId: z.string().uuid(),
   amount: z.number().positive(),
   description: z.string().trim().optional().or(z.literal('')),
   entryDate: z.string().trim().min(1),
@@ -25,7 +25,12 @@ const entrySchema = z.object({
 })
 
 const paymentSchema = z.object({
-  contactId: z.string().trim().min(1),
+  contactId: z.string().uuid(),
+  // Which invoice this payment settles. Optional so an older client that
+  // hasn't been reloaded yet still works, but the UI always sends it — without
+  // it the payment falls back to FIFO attribution on the next load, which is
+  // exactly the bug 0008 exists to fix.
+  entryId: z.string().uuid().optional(),
   amount: z.number().positive(),
   paidAt: z.string().trim().optional(),
 })
@@ -117,8 +122,29 @@ export async function POST(request: Request) {
       return NextResponse.json({ contact: data })
     }
 
+    // Both write branches below take a contact_id straight from the request
+    // body. The foreign key only proves the contact EXISTS — not that it
+    // belongs to the caller. Without this check any signed-in user could write
+    // ledger rows against another merchant's customer, and because contacts
+    // cascade on delete, the real owner deleting that contact would silently
+    // destroy the other user's money rows.
+    const ownsContact = async (contactId: string) => {
+      const { data } = await supabase
+        .from('unreal_bs_udhar_contacts')
+        .select('id')
+        .eq('id', contactId)
+        .eq('user_id', userId)
+        .maybeSingle()
+      return Boolean(data)
+    }
+
     if (parsed.data.type === 'entry') {
       const { contactId, amount, description, entryDate, dueDate } = parsed.data.data
+
+      if (!(await ownsContact(contactId))) {
+        return NextResponse.json({ message: 'Customer not found.' }, { status: 404 })
+      }
+
       const { data, error } = await supabase
         .from('unreal_bs_udhar_entries')
         .insert({
@@ -135,18 +161,43 @@ export async function POST(request: Request) {
       return NextResponse.json({ entry: data })
     }
 
-    const { contactId, amount, paidAt } = parsed.data.data
+    const { contactId, entryId, amount, paidAt } = parsed.data.data
+
+    if (!(await ownsContact(contactId))) {
+      return NextResponse.json({ message: 'Customer not found.' }, { status: 404 })
+    }
+
+    // The invoice must belong to this user AND to this customer — otherwise a
+    // payment could be attributed to an unrelated invoice and quietly clear a
+    // debt that was never settled.
+    if (entryId) {
+      const { data: entry } = await supabase
+        .from('unreal_bs_udhar_entries')
+        .select('id')
+        .eq('id', entryId)
+        .eq('user_id', userId)
+        .eq('contact_id', contactId)
+        .maybeSingle()
+      if (!entry) {
+        return NextResponse.json({ message: 'That invoice was not found for this customer.' }, { status: 404 })
+      }
+    }
+
     const { data, error } = await supabase
       .from('unreal_bs_udhar_payments')
       .insert({
         user_id: userId,
         contact_id: contactId,
+        entry_id: entryId ?? null,
         amount,
         paid_at: paidAt || new Date().toISOString(),
       })
       .select()
       .single()
-    if (error) return NextResponse.json({ message: DB_NOT_READY_MESSAGE }, { status: 502 })
+    if (error) {
+      await logError('udhar-khata-payment-insert', error, { userId, contactId, entryId })
+      return NextResponse.json({ message: DB_NOT_READY_MESSAGE }, { status: 502 })
+    }
     return NextResponse.json({ payment: data })
   } catch (err) {
     await logError('udhar-khata-route-post', err, { userId })

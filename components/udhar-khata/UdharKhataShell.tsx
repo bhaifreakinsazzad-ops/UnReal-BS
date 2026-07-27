@@ -127,6 +127,8 @@ interface DbEntryRow {
 interface DbPaymentRow {
   id: string
   contact_id: string
+  /** Null only for rows written before migration 0008 added the column. */
+  entry_id?: string | null
   amount: number | string
   paid_at: string
 }
@@ -146,6 +148,55 @@ function mapEntryRaw(row: DbEntryRow): CreditEntry {
     paidAmount: 0,
     status: 'pending',
   }
+}
+
+// Payments recorded from migration 0008 onward carry the invoice they settle,
+// so their attribution is read, not guessed. Only legacy rows (entry_id null)
+// still go through the FIFO derivation below — which is what used to silently
+// move a payment from the invoice the merchant chose onto the oldest unpaid
+// one every time the page reloaded.
+function allocatePayments(
+  entries: CreditEntry[],
+  rawPayments: { id: string; contactId: string; entryId: string | null; amount: number; date: string }[]
+): { entries: CreditEntry[]; payments: PaymentRecord[] } {
+  const entryIds = new Set(entries.map(e => e.id))
+  // An entry_id pointing at an invoice we didn't load is treated as legacy
+  // rather than dropped, so the payment still reduces the customer's balance.
+  const attributed = rawPayments.filter(p => p.entryId && entryIds.has(p.entryId))
+  const legacy = rawPayments.filter(p => !p.entryId || !entryIds.has(p.entryId))
+
+  const explicitPayments: PaymentRecord[] = attributed.map(p => ({
+    id: p.id,
+    entryId: p.entryId as string,
+    contactId: p.contactId,
+    amount: p.amount,
+    date: p.date,
+    note: '',
+  }))
+
+  // Reduce each entry by what is already explicitly attributed to it, then let
+  // FIFO distribute only the legacy remainder across what's still outstanding.
+  const paidExplicit = new Map<string, number>()
+  for (const p of explicitPayments) {
+    paidExplicit.set(p.entryId, (paidExplicit.get(p.entryId) ?? 0) + p.amount)
+  }
+
+  const entriesForFifo = entries.map(e => ({
+    ...e,
+    amount: Math.max(0, e.amount - (paidExplicit.get(e.id) ?? 0)),
+  }))
+
+  const fifo = allocatePaymentsFifo(entriesForFifo, legacy)
+
+  // Recombine: restore true invoice amounts and sum both payment sources.
+  const resultEntries = entries.map(e => {
+    const fifoEntry = fifo.entries.find(x => x.id === e.id)
+    const paid = (paidExplicit.get(e.id) ?? 0) + (fifoEntry?.paidAmount ?? 0)
+    const status: CreditEntry['status'] = paid >= e.amount ? 'paid' : paid > 0 ? 'partial' : 'pending'
+    return { ...e, paidAmount: paid, status }
+  })
+
+  return { entries: resultEntries, payments: [...explicitPayments, ...fifo.payments] }
 }
 
 function allocatePaymentsFifo(
@@ -230,10 +281,11 @@ function useKhata() {
         const rawPayments = (json.payments ?? []).map(row => ({
           id: row.id,
           contactId: row.contact_id,
+          entryId: row.entry_id ?? null,
           amount: Number(row.amount),
           date: row.paid_at,
         }))
-        const { entries: derivedEntries, payments: derivedPayments } = allocatePaymentsFifo(rawEntries, rawPayments)
+        const { entries: derivedEntries, payments: derivedPayments } = allocatePayments(rawEntries, rawPayments)
 
         setContacts(mappedContacts)
         setEntries(derivedEntries)
@@ -310,7 +362,13 @@ function useKhata() {
       const res = await fetch('/api/udhar-khata', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ type: 'payment', data: { contactId: p.contactId, amount: p.amount, paidAt: p.date } }),
+        // entryId is what makes the attribution survive a reload. Without it
+        // the server has nothing to store and the next load re-derives the
+        // invoice by FIFO, silently moving this payment to an older bill.
+        body: JSON.stringify({
+          type: 'payment',
+          data: { contactId: p.contactId, entryId: p.entryId, amount: p.amount, paidAt: p.date },
+        }),
       })
       if (!res.ok) throw new Error('request failed')
       const json = (await res.json()) as { payment: DbPaymentRow }
