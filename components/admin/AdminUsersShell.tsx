@@ -12,6 +12,8 @@ interface AdminUser {
   email: string
   businessName: string | null
   ghlLocationId: string | null
+  dailySpendCapBdt: number | null
+  freeDailyMessages: number | null
   role: string
   createdAt: string
 }
@@ -28,6 +30,8 @@ export function AdminUsersShell() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [drafts, setDrafts] = useState<Record<string, string>>({})
+  const [caps, setCaps] = useState<Record<string, string>>({})
+  const [frees, setFrees] = useState<Record<string, string>>({})
   const [saving, setSaving] = useState<string | null>(null)
   const [saved, setSaved] = useState<Record<string, boolean>>({})
 
@@ -38,6 +42,8 @@ export function AdminUsersShell() {
         const list = json.users ?? []
         setUsers(list)
         setDrafts(Object.fromEntries(list.map((u) => [u.id, u.ghlLocationId ?? ''])))
+        setCaps(Object.fromEntries(list.map((u) => [u.id, u.dailySpendCapBdt != null ? String(u.dailySpendCapBdt) : ''])))
+        setFrees(Object.fromEntries(list.map((u) => [u.id, u.freeDailyMessages != null ? String(u.freeDailyMessages) : ''])))
       })
       .catch(() => setError('Could not load users.'))
       .finally(() => setLoading(false))
@@ -51,7 +57,14 @@ export function AdminUsersShell() {
       const res = await fetch('/api/admin/users', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId: u.id, ghlLocationId: raw === '' ? null : raw }),
+        body: JSON.stringify({
+          userId: u.id,
+          ghlLocationId: raw === '' ? null : raw,
+          // Blank means "use the platform default"; 0 is a real value that
+          // freezes spending / disables the free tier for this account.
+          dailySpendCapBdt: (caps[u.id] ?? '') === '' ? null : Number(caps[u.id]),
+          freeDailyMessages: (frees[u.id] ?? '') === '' ? null : Number(frees[u.id]),
+        }),
       })
       const json = await res.json().catch(() => ({}))
       if (!res.ok) throw new Error(json?.message ?? 'Could not update this user.')
@@ -77,6 +90,8 @@ export function AdminUsersShell() {
           Assign each customer their own GHL sub-account location id. Until you do, their
           CRM screens show a &quot;workspace being set up&quot; state — they never see another
           customer&apos;s data. Their wallet, Udhar Khata and AI work from day one regardless.
+          Leave the daily cap and free-per-day fields blank to use the platform defaults
+          (৳500/day, 10 free messages); enter 0 to freeze an account without deleting it.
         </p>
       </div>
 
@@ -121,13 +136,31 @@ export function AdminUsersShell() {
                         {u.ghlLocationId ? '' : ' · no workspace yet'}
                       </p>
                     </div>
-                    <div className="flex items-end gap-2">
-                      <div className="w-56">
+                    <div className="flex flex-wrap items-end gap-2">
+                      <div className="w-52">
                         <Input
                           label="GHL location id"
-                          placeholder="leave blank for none"
+                          placeholder="blank = none"
                           value={drafts[u.id] ?? ''}
                           onChange={(e) => setDrafts((d) => ({ ...d, [u.id]: e.target.value }))}
+                        />
+                      </div>
+                      <div className="w-32">
+                        <Input
+                          label="Daily cap ৳"
+                          type="number"
+                          placeholder="500"
+                          value={caps[u.id] ?? ''}
+                          onChange={(e) => setCaps((c) => ({ ...c, [u.id]: e.target.value }))}
+                        />
+                      </div>
+                      <div className="w-28">
+                        <Input
+                          label="Free/day"
+                          type="number"
+                          placeholder="10"
+                          value={frees[u.id] ?? ''}
+                          onChange={(e) => setFrees((f) => ({ ...f, [u.id]: e.target.value }))}
                         />
                       </div>
                       <Button onClick={() => save(u)} loading={saving === u.id} disabled={saving !== null}>

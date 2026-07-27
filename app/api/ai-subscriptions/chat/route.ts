@@ -40,6 +40,30 @@ function round2(n: number): number {
 
 const MAX_OUTPUT_TOKENS = 1024
 
+// Platform defaults, overridable per user on unreal_bs_users.
+//
+// 500 BDT/day buys ~8,450 cheap-model chats or ~539 premium chats — roughly
+// 3-10x any realistic human ceiling, so it is invisible in normal use while
+// bounding runaway-script damage to 500/day instead of a whole 2,600 BDT Pro
+// package. Credit is prepaid, so this protects the customer's balance and our
+// provider-cost concentration, not our cash position.
+const DEFAULT_DAILY_SPEND_CAP_BDT = 500
+
+// Registered-but-unpaid users get a small daily allowance on the cheapest
+// model only. True cost is ~0.041 BDT/message, so 10/day is ~12 BDT/month for
+// someone using it every single day.
+const DEFAULT_FREE_DAILY_MESSAGES = 10
+
+// Local-day boundary in Bangladesh (UTC+6) — a cap that resets at UTC midnight
+// would reset at 6am local, in the middle of a shop owner's working morning.
+function startOfTodayIso(): string {
+  const nowUtcMs = Date.now()
+  const dhakaMs = nowUtcMs + 6 * 60 * 60 * 1000
+  const dhakaMidnight = new Date(dhakaMs)
+  dhakaMidnight.setUTCHours(0, 0, 0, 0)
+  return new Date(dhakaMidnight.getTime() - 6 * 60 * 60 * 1000).toISOString()
+}
+
 // Deliberately pessimistic. English averages ~4 characters per token; using 3
 // over-estimates the input, so the pre-flight gate errs toward rejecting a
 // request we might not be able to charge for, never toward letting an
@@ -117,7 +141,7 @@ export async function POST(request: Request) {
     // it was always undefined and the model-retirement guard never once fired.
     const { data: rate, error: rateError } = await supabase
       .from('unreal_bs_ai_model_rates')
-      .select('id, provider, model_id, display_name, input_rate_bdt_per_1k, output_rate_bdt_per_1k, markup_multiplier')
+      .select('id, provider, model_id, display_name, input_rate_bdt_per_1k, output_rate_bdt_per_1k, markup_multiplier, free_tier_eligible')
       .eq('model_id', modelId)
       .eq('is_active', true)
       .maybeSingle()
@@ -128,26 +152,39 @@ export async function POST(request: Request) {
     }
     if (!rate) return NextResponse.json({ message: 'Unknown or inactive model.' }, { status: 400 })
 
-    const { data: wallet, error: walletError } = await supabase
-      .from('unreal_bs_wallets')
-      .select('balance_bdt')
-      .eq('user_id', userId)
-      .maybeSingle()
+    const [{ data: wallet, error: walletError }, { data: userRow }] = await Promise.all([
+      supabase.from('unreal_bs_wallets').select('balance_bdt').eq('user_id', userId).maybeSingle(),
+      supabase
+        .from('unreal_bs_users')
+        .select('daily_spend_cap_bdt, free_daily_messages')
+        .eq('id', userId)
+        .maybeSingle(),
+    ])
 
     if (walletError) return NextResponse.json({ message: DB_NOT_READY_MESSAGE }, { status: 502 })
 
-    // Cheap early exit. The real affordability gate is the estimate below —
-    // this check alone used to be the ONLY one, which meant a wallet holding
-    // ৳0.01 could drive unlimited paid upstream calls, because the charge was
-    // only attempted after the provider had already billed us and a failed
-    // charge left the balance untouched.
     const balanceBdt = wallet ? Number(wallet.balance_bdt) : 0
-    if (!wallet || balanceBdt <= 0) {
-      return NextResponse.json(
-        { message: 'Insufficient balance. Please top up before chatting.' },
-        { status: 402 }
-      )
-    }
+
+    // Per-user overrides fall back to the platform defaults. Null means "use
+    // the default"; 0 is a real value that freezes the behaviour outright.
+    const dailyCapBdt =
+      userRow?.daily_spend_cap_bdt != null ? Number(userRow.daily_spend_cap_bdt) : DEFAULT_DAILY_SPEND_CAP_BDT
+    const freeDailyLimit =
+      userRow?.free_daily_messages != null ? Number(userRow.free_daily_messages) : DEFAULT_FREE_DAILY_MESSAGES
+
+    // Today's usage, read from the ledger itself rather than a denormalised
+    // counter so it cannot drift out of sync with what was actually charged.
+    const since = startOfTodayIso()
+    const { data: todayRows } = await supabase
+      .from('unreal_bs_ai_usage_ledger')
+      .select('cost_bdt, is_free')
+      .eq('user_id', userId)
+      .gte('created_at', since)
+
+    const spentTodayBdt = (todayRows ?? [])
+      .filter((r) => !r.is_free)
+      .reduce((sum, r) => sum + Number(r.cost_bdt), 0)
+    const freeUsedToday = (todayRows ?? []).filter((r) => r.is_free).length
 
     // Optional web-search grounding. Best-effort only: any failure here
     // (Tavily unconfigured or the call itself erroring) is logged and
@@ -193,10 +230,44 @@ export async function POST(request: Request) {
       messages.reduce((n, m) => n + m.content.length, 0)
     const estimatedCostBdt = estimateCostBdt(promptChars, rate)
 
-    if (balanceBdt < estimatedCostBdt) {
+    // Decide how this message is paid for, in priority order:
+    //   1. wallet — if the balance covers it AND it stays inside today's cap
+    //   2. free allowance — registered users get a few messages/day on the
+    //      cheapest model, so a new signup can genuinely try the product
+    //   3. refuse, with a message that says which limit was hit
+    const canAffordFromWallet = balanceBdt >= estimatedCostBdt
+    const withinDailyCap = spentTodayBdt + estimatedCostBdt <= dailyCapBdt
+    const freeRemaining = Math.max(0, freeDailyLimit - freeUsedToday)
+    const canUseFree = rate.free_tier_eligible === true && freeRemaining > 0
+
+    const billingMode: 'wallet' | 'free' | null = canAffordFromWallet && withinDailyCap
+      ? 'wallet'
+      : canUseFree
+        ? 'free'
+        : null
+
+    if (billingMode === null) {
+      // Distinguish the reasons — "top up" is useless advice to someone who
+      // has money but has hit the daily cap.
+      if (canAffordFromWallet && !withinDailyCap) {
+        return NextResponse.json(
+          {
+            message: `You have reached today's spending limit of ৳${dailyCapBdt.toFixed(0)}. This resets at midnight. Your balance is safe — contact support if you need a higher limit.`,
+            code: 'DAILY_CAP_REACHED',
+            dailyCapBdt,
+            spentTodayBdt: round2(spentTodayBdt),
+          },
+          { status: 429 }
+        )
+      }
+
       return NextResponse.json(
         {
-          message: `This message could cost up to ৳${estimatedCostBdt.toFixed(2)} and your balance is ৳${balanceBdt.toFixed(2)}. Please top up, or send a shorter message.`,
+          message:
+            freeDailyLimit > 0 && rate.free_tier_eligible
+              ? `You have used all ${freeDailyLimit} free messages for today, and your balance is ৳${balanceBdt.toFixed(2)}. Top up to keep going, or come back tomorrow.`
+              : `This message could cost up to ৳${estimatedCostBdt.toFixed(2)} and your balance is ৳${balanceBdt.toFixed(2)}. Please top up, or send a shorter message.`,
+          code: 'INSUFFICIENT_BALANCE',
         },
         { status: 402 }
       )
@@ -247,6 +318,33 @@ export async function POST(request: Request) {
         (usage.outputTokens / 1000) * Number(rate.output_rate_bdt_per_1k) * Number(rate.markup_multiplier)
     )
 
+    // A free message is logged to the same ledger with is_free = true and zero
+    // cost, so free and paid usage report together and can never be confused.
+    if (billingMode === 'free') {
+      const { data: freeLedger, error: freeError } = await supabase.rpc('unreal_bs_ai_log_free_usage', {
+        p_user_id: userId,
+        p_model_rate_id: rate.id,
+        p_provider: rate.provider,
+        p_model_id: rate.model_id,
+        p_input_tokens: usage.inputTokens,
+        p_output_tokens: usage.outputTokens,
+      })
+
+      if (freeError) {
+        // The reply is already paid for upstream; failing to record it would
+        // hand out an unlimited free tier, so surface it rather than swallow.
+        await logError('ai-subscriptions-chat-free-log-failed', freeError, { userId, modelId })
+      }
+
+      return NextResponse.json({
+        reply: providerResponse.content,
+        cost: 0,
+        balanceAfter: Number(freeLedger?.balance_after_bdt ?? balanceBdt),
+        billedAs: 'free',
+        freeRemainingToday: Math.max(0, freeRemaining - 1),
+      })
+    }
+
     const { data: ledger, error: debitError } = await supabase.rpc('unreal_bs_ai_debit_wallet', {
       p_user_id: userId,
       p_model_rate_id: rate.id,
@@ -265,15 +363,10 @@ export async function POST(request: Request) {
       // response far larger than estimated). Logged as UNBILLED-LEAK so it can
       // be grepped and reconciled against the provider invoice.
       //
-      // TODO: also write a status='failed' row to unreal_bs_ai_usage_ledger.
-      // Blocked today because that table's NOT NULL wallet_id references the
-      // legacy unreal_bs_ai_wallets, which migration 0004 superseded with
-      // unreal_bs_wallets — see the duplicate unreal_bs_ai_debit_wallet
-      // definitions in 0003 and 0004. Needs a migration to resolve first.
       await logError(
         'ai-subscriptions-chat-UNBILLED-LEAK',
         debitError,
-        { userId, modelId, provider: rate.provider, costBdt, estimatedCostBdt, balanceBeforeBdt: balanceBdt }
+        { userId, modelId, provider: rate.provider, costBdt, estimatedCostBdt, balanceBeforeBdt: balanceBdt, spentTodayBdt }
       )
       return NextResponse.json(
         { message: 'Insufficient balance for this response. Please top up.' },

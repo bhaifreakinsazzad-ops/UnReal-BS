@@ -19,7 +19,11 @@ const patchSchema = z.object({
   userId: z.string().uuid(),
   // Null clears the assignment (revokes CRM access without deleting the
   // account — their wallet and khata keep working).
-  ghlLocationId: z.string().trim().min(1).max(100).nullable(),
+  ghlLocationId: z.string().trim().min(1).max(100).nullable().optional(),
+  // null = fall back to the platform default. 0 is a real value: it freezes
+  // paid spending / disables the free tier for that account without deleting it.
+  dailySpendCapBdt: z.number().min(0).max(1_000_000).nullable().optional(),
+  freeDailyMessages: z.number().int().min(0).max(1000).nullable().optional(),
 })
 
 async function requireAdmin() {
@@ -43,7 +47,7 @@ export async function GET() {
     const supabase = getSupabaseAdmin()
     const { data, error } = await supabase
       .from('unreal_bs_users')
-      .select('id, email, business_name, ghl_location_id, role, created_at')
+      .select('id, email, business_name, ghl_location_id, role, created_at, daily_spend_cap_bdt, free_daily_messages')
       .order('created_at', { ascending: false })
       .limit(200)
 
@@ -59,6 +63,8 @@ export async function GET() {
         email: u.email,
         businessName: u.business_name,
         ghlLocationId: u.ghl_location_id,
+        dailySpendCapBdt: u.daily_spend_cap_bdt != null ? Number(u.daily_spend_cap_bdt) : null,
+        freeDailyMessages: u.free_daily_messages != null ? Number(u.free_daily_messages) : null,
         role: u.role,
         createdAt: u.created_at,
       })),
@@ -85,15 +91,24 @@ export async function PATCH(request: Request) {
     return NextResponse.json({ message: 'Invalid request payload.' }, { status: 400 })
   }
 
-  const { userId, ghlLocationId } = parsed.data
+  const { userId, ghlLocationId, dailySpendCapBdt, freeDailyMessages } = parsed.data
+
+  const update: Record<string, unknown> = {}
+  if (ghlLocationId !== undefined) update.ghl_location_id = ghlLocationId
+  if (dailySpendCapBdt !== undefined) update.daily_spend_cap_bdt = dailySpendCapBdt
+  if (freeDailyMessages !== undefined) update.free_daily_messages = freeDailyMessages
+
+  if (Object.keys(update).length === 0) {
+    return NextResponse.json({ message: 'Nothing to update.' }, { status: 400 })
+  }
 
   try {
     const supabase = getSupabaseAdmin()
     const { data, error } = await supabase
       .from('unreal_bs_users')
-      .update({ ghl_location_id: ghlLocationId })
+      .update(update)
       .eq('id', userId)
-      .select('id, email, ghl_location_id')
+      .select('id, email, ghl_location_id, daily_spend_cap_bdt, free_daily_messages')
       .single()
 
     if (error || !data) {
@@ -101,7 +116,15 @@ export async function PATCH(request: Request) {
       return NextResponse.json({ message: 'Could not update this user.' }, { status: 502 })
     }
 
-    return NextResponse.json({ user: { id: data.id, email: data.email, ghlLocationId: data.ghl_location_id } })
+    return NextResponse.json({
+      user: {
+        id: data.id,
+        email: data.email,
+        ghlLocationId: data.ghl_location_id,
+        dailySpendCapBdt: data.daily_spend_cap_bdt != null ? Number(data.daily_spend_cap_bdt) : null,
+        freeDailyMessages: data.free_daily_messages != null ? Number(data.free_daily_messages) : null,
+      },
+    })
   } catch (err) {
     await logError('admin-users-patch', err, { userId })
     return NextResponse.json({ message: 'Could not update this user.' }, { status: 502 })

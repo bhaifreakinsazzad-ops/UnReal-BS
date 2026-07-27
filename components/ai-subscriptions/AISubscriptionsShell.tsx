@@ -46,6 +46,7 @@ export function AISubscriptionsShell() {
   const [insufficientBalance, setInsufficientBalance] = useState(false)
   const [chatError, setChatError] = useState<string | null>(null)
 
+  const [freeRemaining, setFreeRemaining] = useState<number | null>(null)
   const [searchAvailable, setSearchAvailable] = useState(false)
   const [useSearch, setUseSearch] = useState(false)
 
@@ -126,6 +127,7 @@ export function AISubscriptionsShell() {
         { id: (Date.now() + 1).toString(), role: 'assistant', content: json.reply, ts: Date.now() },
       ])
       if (typeof json.balanceAfter === 'number') setBalance(json.balanceAfter)
+      if (typeof json.freeRemainingToday === 'number') setFreeRemaining(json.freeRemainingToday)
     } catch (err) {
       setChatError(err instanceof Error ? err.message : isBn ? 'কিছু ভুল হয়েছে। আবার চেষ্টা করুন।' : 'Something went wrong. Please try again.')
     } finally {
@@ -199,6 +201,17 @@ export function AISubscriptionsShell() {
             <span>{isBn ? 'আপনার ব্যালেন্স কম — চ্যাট চালিয়ে যেতে টপ আপ করুন।' : 'Your balance is low — top up to keep chatting.'}</span>
           </div>
           <Button variant="outline" size="sm" onClick={scrollToTopup}>{isBn ? 'এখনই টপ আপ করুন' : 'Top up now'}</Button>
+        </div>
+      )}
+
+      {freeRemaining !== null && (
+        <div className="flex items-start gap-2 rounded-xl border border-[#00C875]/30 bg-[#00C875]/[0.08] px-3 py-2.5 text-sm text-[#047857]">
+          <Sparkles className="h-4 w-4 flex-shrink-0 mt-0.5" />
+          <span>
+            {isBn
+              ? `আজ আরও ${freeRemaining}টি ফ্রি মেসেজ বাকি আছে। ফ্রি মেসেজ শুধু সবচেয়ে সাশ্রয়ী মডেলে চলে — বেশি ব্যবহারের জন্য প্যাকেজ নিন।`
+              : `${freeRemaining} free messages left today. Free messages run on the cheapest model — buy a package for more.`}
+          </span>
         </div>
       )}
 
