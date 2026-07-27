@@ -4,7 +4,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { usePathname } from 'next/navigation'
 import { useEffect, useState } from 'react'
-import { ChevronLeft, ChevronRight, ChevronDown, Settings, MoreHorizontal } from 'lucide-react'
+import { ChevronLeft, ChevronRight, ChevronDown, Settings, MoreHorizontal, ShieldCheck } from 'lucide-react'
 import { navItems, type NavItem } from './nav-items'
 import { formatBDT } from '@/components/wallet/WalletBalanceChip'
 import { cn } from '@/lib/utils'
@@ -20,7 +20,20 @@ const moreItems = navItems.filter((item) => !item.group)
 export function Sidebar({ locale = 'en' }: SidebarProps) {
   const [collapsed, setCollapsed] = useState(false)
   const [moreOpen, setMoreOpen] = useState(false)
+  const [isAdmin, setIsAdmin] = useState(false)
   const pathname = usePathname()
+
+  // The admin screens had no entry point anywhere in the UI — the operator had
+  // to type the URLs by hand. /api/admin/ping answers 200 only for the account
+  // configured as ADMIN_EMAIL (404 for everyone else), so the link can be shown
+  // conditionally without shipping that address to the browser.
+  useEffect(() => {
+    fetch('/api/admin/ping')
+      .then((res) => {
+        if (res.ok) setIsAdmin(true)
+      })
+      .catch(() => {})
+  }, [])
 
   const isActive = (href: string) =>
     href === '/' ? pathname === '/' : pathname.startsWith(href)
@@ -117,6 +130,21 @@ export function Sidebar({ locale = 'en' }: SidebarProps) {
       {/* Bottom */}
       <div className="p-2 border-t border-white/5 space-y-1">
         <WalletChip collapsed={collapsed} locale={locale} />
+        {isAdmin && (
+          <Link
+            href="/admin"
+            title="Admin"
+            className={cn(
+              'flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors',
+              pathname.startsWith('/admin')
+                ? 'bg-[#D8B86A]/15 text-[#D8B86A]'
+                : 'text-[#D8B86A]/70 hover:text-[#D8B86A] hover:bg-white/5'
+            )}
+          >
+            <ShieldCheck className="w-5 h-5 flex-shrink-0" />
+            {!collapsed && <span className="text-sm font-medium">Admin</span>}
+          </Link>
+        )}
         <Link
           href="/settings"
           className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-white/50 hover:text-white/80 hover:bg-white/5 transition-colors"
