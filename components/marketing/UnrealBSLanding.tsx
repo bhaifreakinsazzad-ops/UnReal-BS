@@ -29,7 +29,7 @@ const pillars = [
   },
   {
     title: 'Opportunity',
-    body: 'Hoooplaaa requirement-matched opportunities with clear cost before acceptance.',
+    body: 'Requirement-matched opportunities with clear cost before acceptance. In development — join the waitlist from inside the portal.',
     icon: Sparkles,
   },
   {
@@ -43,17 +43,18 @@ const steps = [
   'Apply',
   'Verify business',
   'Activate portal',
-  'Set opportunity requirement',
-  'Receive matched opportunities',
-  'Accept and work',
-  'Settle weekly',
+  'Your CRM workspace is connected',
+  'Start with Udhar Khata and AI',
 ]
 
+// Illustrative only — these are example figures shown on the marketing page,
+// NOT live data. They previously sat under a "Live system" badge, which read as
+// a claim about the visitor's own account.
 const previewMetrics = [
   { label: 'New leads', value: '52', icon: Users },
   { label: 'Follow-ups', value: '12', icon: Inbox },
-  { label: 'Opportunities', value: '3', icon: ShieldCheck },
-  { label: 'Credit left', value: '৳5,000', icon: CreditCard },
+  { label: 'Customers owing you', value: '৳84,200', icon: CreditCard },
+  { label: 'Wallet balance', value: '৳720', icon: ShieldCheck },
 ]
 
 export function UnrealBSLanding() {
@@ -120,7 +121,7 @@ export function UnrealBSLanding() {
                   <p className="text-xs text-white/45">Control Room Preview</p>
                   <p className="text-lg font-black">Today&apos;s business signal</p>
                 </div>
-                <span className="rounded-full bg-[#00C875]/15 px-3 py-1 text-xs font-bold text-[#00C875]">Live system</span>
+                <span className="rounded-full bg-white/10 px-3 py-1 text-xs font-bold text-white/60">Example view</span>
               </div>
               <div className="mt-5 grid grid-cols-2 gap-3">
                 {previewMetrics.map(({ label, value, icon: Icon }) => (
@@ -186,8 +187,8 @@ export function UnrealBSLanding() {
             {[
               ['Activation', '৳4,999'],
               ['Monthly', '৳6,999'],
-              ['Opportunity Credit Eligibility', 'Up to 3 accepted or ৳5,000 outstanding'],
-              ['Settlement', 'Weekly'],
+              ['AI packages', 'From ৳699'],
+              ['Udhar Khata & Wallet', 'Included'],
             ].map(([label, value]) => (
               <div key={label} className="rounded-xl bg-[#070B12]/70 p-4">
                 <p className="text-xs uppercase tracking-wide text-white/45">{label}</p>

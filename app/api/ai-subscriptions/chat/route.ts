@@ -7,6 +7,16 @@ import { checkRateLimit } from '@/lib/rate-limit'
 import { getProvider } from '@/lib/ai-providers'
 import { isTavilyConfigured, tavilySearch } from '@/lib/tools/tavily-search'
 import { logError } from '@/lib/log-error'
+import {
+  DEFAULT_DAILY_SPEND_CAP_BDT,
+  DEFAULT_FREE_DAILY_MESSAGES,
+  actualCostBdt,
+  decideBilling,
+  estimateCostBdt,
+  round2,
+  startOfDayDhakaIso,
+  usageWithFallback,
+} from '@/lib/pricing'
 
 export const dynamic = 'force-dynamic'
 
@@ -34,57 +44,11 @@ const chatSchema = z.object({
   useSearch: z.boolean().optional().default(false),
 })
 
-function round2(n: number): number {
-  return Math.round(n * 100) / 100
-}
 
-const MAX_OUTPUT_TOKENS = 1024
 
-// Platform defaults, overridable per user on unreal_bs_users.
-//
-// 500 BDT/day buys ~8,450 cheap-model chats or ~539 premium chats — roughly
-// 3-10x any realistic human ceiling, so it is invisible in normal use while
-// bounding runaway-script damage to 500/day instead of a whole 2,600 BDT Pro
-// package. Credit is prepaid, so this protects the customer's balance and our
-// provider-cost concentration, not our cash position.
-const DEFAULT_DAILY_SPEND_CAP_BDT = 500
 
-// Registered-but-unpaid users get a small daily allowance on the cheapest
-// model only. True cost is ~0.041 BDT/message, so 10/day is ~12 BDT/month for
-// someone using it every single day.
-const DEFAULT_FREE_DAILY_MESSAGES = 10
 
-// Local-day boundary in Bangladesh (UTC+6) — a cap that resets at UTC midnight
-// would reset at 6am local, in the middle of a shop owner's working morning.
-function startOfTodayIso(): string {
-  const nowUtcMs = Date.now()
-  const dhakaMs = nowUtcMs + 6 * 60 * 60 * 1000
-  const dhakaMidnight = new Date(dhakaMs)
-  dhakaMidnight.setUTCHours(0, 0, 0, 0)
-  return new Date(dhakaMidnight.getTime() - 6 * 60 * 60 * 1000).toISOString()
-}
 
-// Deliberately pessimistic. English averages ~4 characters per token; using 3
-// over-estimates the input, so the pre-flight gate errs toward rejecting a
-// request we might not be able to charge for, never toward letting an
-// unaffordable one reach a paid provider.
-const CHARS_PER_TOKEN_ESTIMATE = 3
-
-interface ModelRate {
-  input_rate_bdt_per_1k: number | string
-  output_rate_bdt_per_1k: number | string
-  markup_multiplier: number | string
-}
-
-// Worst-case cost of a request BEFORE it is sent upstream: all prompt
-// characters as input, plus a full maxTokens response.
-function estimateCostBdt(promptChars: number, rate: ModelRate): number {
-  const estInputTokens = Math.ceil(promptChars / CHARS_PER_TOKEN_ESTIMATE)
-  return round2(
-    (estInputTokens / 1000) * Number(rate.input_rate_bdt_per_1k) * Number(rate.markup_multiplier) +
-      (MAX_OUTPUT_TOKENS / 1000) * Number(rate.output_rate_bdt_per_1k) * Number(rate.markup_multiplier)
-  )
-}
 
 async function requireUserId() {
   const session = await auth()
@@ -174,7 +138,7 @@ export async function POST(request: Request) {
 
     // Today's usage, read from the ledger itself rather than a denormalised
     // counter so it cannot drift out of sync with what was actually charged.
-    const since = startOfTodayIso()
+    const since = startOfDayDhakaIso()
     const { data: todayRows } = await supabase
       .from('unreal_bs_ai_usage_ledger')
       .select('cost_bdt, is_free')
@@ -235,21 +199,23 @@ export async function POST(request: Request) {
     //   2. free allowance — registered users get a few messages/day on the
     //      cheapest model, so a new signup can genuinely try the product
     //   3. refuse, with a message that says which limit was hit
-    const canAffordFromWallet = balanceBdt >= estimatedCostBdt
-    const withinDailyCap = spentTodayBdt + estimatedCostBdt <= dailyCapBdt
-    const freeRemaining = Math.max(0, freeDailyLimit - freeUsedToday)
-    const canUseFree = rate.free_tier_eligible === true && freeRemaining > 0
-
-    const billingMode: 'wallet' | 'free' | null = canAffordFromWallet && withinDailyCap
-      ? 'wallet'
-      : canUseFree
-        ? 'free'
-        : null
+    // Decision lives in lib/pricing.ts so it is unit-tested — see
+    // lib/pricing.test.ts, which covers the cap boundary, the free-tier
+    // fallback, and the "0 means freeze, not unlimited" cases.
+    const { mode: billingMode, refusal, freeRemaining } = decideBilling({
+      estimatedCostBdt,
+      balanceBdt,
+      spentTodayBdt,
+      dailyCapBdt,
+      freeUsedToday,
+      freeDailyLimit,
+      modelIsFreeEligible: rate.free_tier_eligible === true,
+    })
 
     if (billingMode === null) {
       // Distinguish the reasons — "top up" is useless advice to someone who
       // has money but has hit the daily cap.
-      if (canAffordFromWallet && !withinDailyCap) {
+      if (refusal === 'daily_cap') {
         return NextResponse.json(
           {
             message: `You have reached today's spending limit of ৳${dailyCapBdt.toFixed(0)}. This resets at midnight. Your balance is safe — contact support if you need a higher limit.`,
@@ -300,12 +266,12 @@ export async function POST(request: Request) {
     // provider, billed the customer nothing, and recorded a falsified entry in
     // the table the migration calls the source of truth for disputes.
     // Estimating here covers every adapter, present and future, in one place.
-    let usage = providerResponse.usage
-    if (usage.inputTokens === 0 && usage.outputTokens === 0 && providerResponse.content.trim().length > 0) {
-      usage = {
-        inputTokens: Math.ceil(promptChars / CHARS_PER_TOKEN_ESTIMATE),
-        outputTokens: Math.ceil(providerResponse.content.length / CHARS_PER_TOKEN_ESTIMATE),
-      }
+    const { usage, estimated } = usageWithFallback(
+      providerResponse.usage,
+      promptChars,
+      providerResponse.content.trim().length
+    )
+    if (estimated) {
       await logError(
         'ai-usage-estimated-provider-reported-none',
         new Error('Provider returned no usage data; billed on character estimate'),
@@ -313,10 +279,7 @@ export async function POST(request: Request) {
       )
     }
 
-    const costBdt = round2(
-      (usage.inputTokens / 1000) * Number(rate.input_rate_bdt_per_1k) * Number(rate.markup_multiplier) +
-        (usage.outputTokens / 1000) * Number(rate.output_rate_bdt_per_1k) * Number(rate.markup_multiplier)
-    )
+    const costBdt = actualCostBdt(usage, rate)
 
     // A free message is logged to the same ledger with is_free = true and zero
     // cost, so free and paid usage report together and can never be confused.

@@ -3,8 +3,13 @@ import { z } from 'zod'
 import { auth } from '@/auth'
 import { getSupabaseAdmin, isSupabaseConfigured } from '@/lib/supabase/client'
 import { resolveUserIdByEmail } from '@/lib/supabase/user'
-import type { OpportunityStatus } from '@/lib/unreal/opportunities'
 import { logError } from '@/lib/log-error'
+
+// Inlined from the former lib/unreal/opportunities.ts, which was deleted along
+// with the fabricated demo-opportunity data it also exported. This route has no
+// caller yet — Opportunities is an honest waitlist page — but the endpoint is
+// kept as the scaffold for when the real matching feature ships.
+type OpportunityStatus = 'available' | 'accepted' | 'declined' | 'disputed' | 'billable' | 'paid'
 
 export const dynamic = 'force-dynamic'
 

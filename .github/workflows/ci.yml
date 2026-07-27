@@ -1,0 +1,51 @@
+name: CI
+
+# Gates every push and PR. Before this existed, nothing stopped a broken build,
+# a type error, or failing money-math tests from reaching production — the only
+# check was whether someone remembered to run the commands locally.
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+
+concurrency:
+  # A newer push supersedes an in-flight run on the same ref.
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    name: Lint, typecheck, test, build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npx eslint app components lib auth.ts proxy.ts
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Unit tests (pricing and billing math)
+        run: npm test
+
+      - name: Production build
+        # Placeholder values only — the build must not require real secrets.
+        # Anything that genuinely needs credentials has to degrade gracefully,
+        # which is also what keeps local development working without them.
+        env:
+          AUTH_SECRET: ci-placeholder-secret-not-used-at-runtime
+          ADMIN_EMAIL: ci@example.com
+          ADMIN_PASSWORD: ci-placeholder
+        run: npm run build
