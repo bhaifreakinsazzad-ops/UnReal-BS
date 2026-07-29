@@ -124,6 +124,13 @@ export async function PATCH(request: Request) {
     // one place — an operator cannot rewind a live campaign to draft, and a
     // rejected one cannot jump straight to live.
     if (status) {
+      // Read the fee state BEFORE transitioning, so a rejection can refund it.
+      const { data: before } = await supabase
+        .from('unreal_bs_ad_campaigns')
+        .select('user_id, name, service_fee_bdt, service_fee_charged_at, service_fee_refunded_at')
+        .eq('id', campaignId)
+        .maybeSingle()
+
       const { error: rpcError } = await supabase.rpc('unreal_bs_ad_campaign_set_status', {
         p_campaign_id: campaignId,
         p_status: status,
@@ -138,6 +145,48 @@ export async function PATCH(request: Request) {
         }
         await logError('admin-ad-campaigns-transition', rpcError, { campaignId, status })
         return NextResponse.json({ message: 'Could not update this campaign.' }, { status: 502 })
+      }
+
+      // Rejecting or cancelling a campaign we were already paid to run means
+      // refunding the setup fee. Doing this by hand would eventually be
+      // forgotten, and keeping the money for work not done is indefensible.
+      const shouldRefund =
+        (status === 'rejected' || status === 'cancelled') &&
+        before?.service_fee_charged_at &&
+        !before?.service_fee_refunded_at &&
+        Number(before?.service_fee_bdt ?? 0) > 0
+
+      if (shouldRefund && before) {
+        const feeBdt = Number(before.service_fee_bdt)
+        const { error: refundError } = await supabase.rpc('unreal_bs_credit_wallet_generic', {
+          p_user_id: before.user_id,
+          p_amount_bdt: feeBdt,
+          p_kind: 'ad_service_fee_refund',
+          p_reference_type: 'ad_campaign',
+          p_reference_id: campaignId,
+          p_note: `Refund: ${before.name} was not run`,
+        })
+
+        if (refundError) {
+          // Surfaced loudly — the customer is owed money and the partial index
+          // in migration 0012 will keep showing this campaign until it is paid.
+          await logError('admin-ad-campaigns-REFUND-FAILED', refundError, {
+            campaignId,
+            userId: before.user_id,
+            feeBdt,
+          })
+          return NextResponse.json(
+            {
+              message: `Status changed, but the ৳${feeBdt} refund FAILED. The customer is still owed this — resolve it manually.`,
+            },
+            { status: 500 }
+          )
+        }
+
+        await supabase
+          .from('unreal_bs_ad_campaigns')
+          .update({ service_fee_refunded_at: new Date().toISOString() })
+          .eq('id', campaignId)
       }
     }
 

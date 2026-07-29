@@ -7,6 +7,12 @@ import { Button } from '@/components/ui/button'
 import { Card, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input, Textarea } from '@/components/ui/input'
 import { useLocale } from '@/lib/i18n/context'
+import {
+  MIN_MANAGED_SPEND_BDT,
+  meetsManagedMinimum,
+  serviceFeeBdt,
+  serviceFeePercent,
+} from '@/lib/meta/service-fee'
 
 interface Campaign {
   id: string
@@ -170,11 +176,28 @@ BODY: <2-3 sentence ad, simple language, mention price or offer if relevant>`
       if (!res.ok) throw new Error(json?.message ?? 'Could not save this campaign.')
 
       if (submit) {
-        await fetch(`/api/ads/campaigns/${json.campaign.id}`, {
+        // The submit step is where the setup fee is charged, so it can fail on
+        // insufficient balance. Not checking it would leave the customer
+        // believing their campaign was submitted when it is still a draft —
+        // and the draft IS saved, so the message says so rather than implying
+        // the work was lost.
+        const submitRes = await fetch(`/api/ads/campaigns/${json.campaign.id}`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ action: 'submit' }),
         })
+        if (!submitRes.ok) {
+          const submitJson = await submitRes.json().catch(() => ({}))
+          setCreating(false)
+          setLoading(true)
+          load()
+          throw new Error(
+            submitJson?.message ??
+              (isBn
+                ? 'খসড়া সেভ হয়েছে, কিন্তু জমা দেওয়া যায়নি।'
+                : 'Draft saved, but it could not be submitted.')
+          )
+        }
       }
 
       setCreating(false)
@@ -318,11 +341,47 @@ BODY: <2-3 sentence ad, simple language, mention price or offer if relevant>`
               />
               <div className="flex items-end">
                 <div className="w-full rounded-xl bg-[#F5F3FF] px-3 py-2.5">
-                  <p className="text-[11px] font-medium text-gray-500">{isBn ? 'সর্বমোট' : 'Total'}</p>
+                  <p className="text-[11px] font-medium text-gray-500">
+                    {isBn ? 'বিজ্ঞাপন খরচ' : 'Ad spend'}
+                  </p>
                   <p className="text-lg font-black text-[#7C3AED]">{bdt(total)}</p>
                 </div>
               </div>
             </div>
+
+            {/* The fee is shown BEFORE submitting, never discovered afterwards.
+                Uses the same module the server charges from, so the number here
+                and the number debited cannot drift apart. */}
+            {total > 0 && (
+              <div className="rounded-xl border border-gray-200 bg-gray-50 p-3 text-xs">
+                {!meetsManagedMinimum(total) ? (
+                  <p className="text-amber-700">
+                    {isBn
+                      ? `মোট বিজ্ঞাপন বাজেট কমপক্ষে ৳${MIN_MANAGED_SPEND_BDT.toLocaleString('en-US')} হতে হবে। এর কম হলে বিজ্ঞাপন খুব কম মানুষের কাছে পৌঁছায়।`
+                      : `Total ad budget must be at least ৳${MIN_MANAGED_SPEND_BDT.toLocaleString('en-US')}. Below this the ad barely reaches anyone.`}
+                  </p>
+                ) : (
+                  <div className="space-y-1.5">
+                    <div className="flex justify-between text-gray-600">
+                      <span>{isBn ? 'Facebook-কে বিজ্ঞাপন খরচ' : 'Ad spend paid to Facebook'}</span>
+                      <span className="font-semibold text-gray-900">{bdt(total)}</span>
+                    </div>
+                    <div className="flex justify-between text-gray-600">
+                      <span>
+                        {isBn ? 'আমাদের সেটআপ ফি' : 'Our setup fee'}{' '}
+                        <span className="text-gray-400">({serviceFeePercent(total)}%)</span>
+                      </span>
+                      <span className="font-semibold text-gray-900">{bdt(serviceFeeBdt(total))}</span>
+                    </div>
+                    <div className="mt-1 border-t border-gray-200 pt-1.5 text-[11px] leading-relaxed text-gray-500">
+                      {isBn
+                        ? `সেটআপ ফি ৳${serviceFeeBdt(total).toLocaleString('en-US')} আপনার ওয়ালেট থেকে কাটা হবে। বিজ্ঞাপনের ৳${total.toLocaleString('en-US')} আলাদাভাবে Facebook-কে দিতে হবে — আমরা যোগাযোগ করে জানাব। আমরা যদি বিজ্ঞাপনটি চালাতে না পারি, ফি সম্পূর্ণ ফেরত পাবেন।`
+                        : `The ৳${serviceFeeBdt(total).toLocaleString('en-US')} setup fee comes from your wallet. The ৳${total.toLocaleString('en-US')} ad spend is paid to Facebook separately — we will contact you about it. If we cannot run your ad, the fee is refunded in full.`}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
 
             <Input
               label={isBn ? 'কোন এলাকার মানুষকে' : 'Which area'}
@@ -411,8 +470,14 @@ BODY: <2-3 sentence ad, simple language, mention price or offer if relevant>`
             </div>
 
             <div className="flex flex-wrap gap-2 pt-1">
-              <Button onClick={() => save(true)} loading={submitting} disabled={submitting}>
-                {isBn ? 'জমা দিন' : 'Submit for setup'}
+              <Button
+                onClick={() => save(true)}
+                loading={submitting}
+                disabled={submitting || !meetsManagedMinimum(total)}
+              >
+                {isBn
+                  ? `জমা দিন — ৳${serviceFeeBdt(total).toLocaleString('en-US')} ফি`
+                  : `Submit — ৳${serviceFeeBdt(total).toLocaleString('en-US')} fee`}
               </Button>
               <Button variant="outline" onClick={() => save(false)} disabled={submitting}>
                 {isBn ? 'খসড়া সেভ করুন' : 'Save draft'}
