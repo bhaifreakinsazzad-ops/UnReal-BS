@@ -22,6 +22,7 @@ import {
   MessagesSquare,
   CreditCard,
   Landmark,
+  Megaphone,
   Store,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
@@ -83,6 +84,15 @@ export const navItems: NavItem[] = [
     labelEn: 'Inbox',
     href: '/conversations',
     icon: MessageSquare,
+    group: 'money-ai',
+  },
+  {
+    key: 'ads',
+    labelBn: 'ফেসবুক বিজ্ঞাপন',
+    labelEn: 'Facebook Ads',
+    href: '/ads',
+    icon: Megaphone,
+    badge: 'NEW',
     group: 'money-ai',
   },
   {

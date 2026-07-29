@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { ArrowRight, Banknote, CreditCard, Package, Sparkles, Users } from 'lucide-react'
+import { ArrowRight, Banknote, CreditCard, Megaphone, Package, Sparkles, Users } from 'lucide-react'
 import { auth } from '@/auth'
 import { Badge } from '@/components/ui/badge'
 
@@ -45,6 +45,13 @@ const TOOLS = [
     desc: 'The prepaid packages customers buy. Shows the exact worst-case provider cost and profit for each one.',
     icon: Package,
     tone: 'bg-[#FFE9F0] text-[#BE185D]',
+  },
+  {
+    href: '/admin/ad-campaigns',
+    title: 'Ad Campaigns',
+    desc: 'Campaigns customers submitted. Set them up in Meta Ads Manager and report real results back.',
+    icon: Megaphone,
+    tone: 'bg-[#E0F2FE] text-[#0369A1]',
   },
 ]
 
