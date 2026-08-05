@@ -21,16 +21,21 @@ export async function checkRateLimit(
   identifier: string,
   opts: { max: number; windowSeconds: number; failClosed?: boolean }
 ): Promise<{ allowed: boolean }> {
-  const onFailure = (reason: string, detail?: unknown): { allowed: boolean } => {
+  const onFailure = (reason: string): { allowed: boolean } => {
     if (opts.failClosed) {
-      console.error(`[rate-limit] ${reason}; failing CLOSED for bucket "${bucket}":`, detail)
+      console.error(`[rate-limit] ${reason}; failing CLOSED for bucket "${bucket}"`)
       return { allowed: false }
     }
-    console.error(`[rate-limit] ${reason}, failing open:`, detail)
+    console.error(`[rate-limit] ${reason}; failing open for bucket "${bucket}"`)
     return { allowed: true }
   }
 
   if (!isSupabaseConfigured()) {
+    // Missing limiter configuration is acceptable only outside production.
+    // High-value production routes must never lose their throttle silently.
+    if (opts.failClosed && process.env.NODE_ENV === 'production') {
+      return onFailure('Supabase is not configured')
+    }
     // Not an outage — this is local/dev with no database at all. Failing closed
     // here would make it impossible to sign in locally, so allow regardless.
     if (!warnedNotConfigured) {
@@ -49,7 +54,7 @@ export async function checkRateLimit(
       .from('unreal_bs_rate_limit_hits')
       .insert({ bucket, identifier })
 
-    if (insertError) return onFailure('failed to record hit', insertError)
+    if (insertError) return onFailure('failed to record hit')
 
     const windowStart = new Date(Date.now() - opts.windowSeconds * 1000).toISOString()
     const { count, error: countError } = await supabase
@@ -59,12 +64,13 @@ export async function checkRateLimit(
       .eq('identifier', identifier)
       .gt('created_at', windowStart)
 
-    if (countError) return onFailure('failed to count hits', countError)
+    if (countError) return onFailure('failed to count hits')
 
     // The hit just inserted is included in the count, so exactly `max`
     // requests are permitted per window.
     return { allowed: (count ?? 0) <= opts.max }
   } catch (err) {
-    return onFailure('unexpected error', err)
+    void err
+    return onFailure('unexpected error')
   }
 }

@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server'
 import { getSupabaseAdmin, isSupabaseConfigured } from '@/lib/supabase/client'
 import { logError } from '@/lib/log-error'
+import { hashAccessToken } from '@/lib/commerce/access-token'
+import { storefrontEnabledForRequest } from '@/lib/commerce/flags'
 
 export const dynamic = 'force-dynamic'
 
@@ -12,14 +14,15 @@ export const dynamic = 'force-dynamic'
 // source. An unpaid order still gets a response (so the buyer can see their
 // order is being checked), but it carries no lesson content.
 
-const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+const TOKEN = /^[A-Za-z0-9_-]{40,64}$/
 
 export async function GET(
   _request: Request,
   { params }: { params: Promise<{ accessToken: string }> }
 ) {
+  if (!(await storefrontEnabledForRequest())) return new NextResponse(null, { status: 404 })
   const { accessToken } = await params
-  if (!UUID.test(accessToken)) {
+  if (!TOKEN.test(accessToken)) {
     return NextResponse.json({ message: 'Not found.' }, { status: 404 })
   }
   if (!isSupabaseConfigured()) {
@@ -32,7 +35,7 @@ export async function GET(
     const { data: order } = await supabase
       .from('unreal_bs_orders')
       .select('id, product_id, product_title, product_kind, buyer_name, status, paid_at')
-      .eq('access_token', accessToken)
+      .eq('access_token_hash', hashAccessToken(accessToken))
       .maybeSingle()
 
     if (!order) return NextResponse.json({ message: 'Not found.' }, { status: 404 })

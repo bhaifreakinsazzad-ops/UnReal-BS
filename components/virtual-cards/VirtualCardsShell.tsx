@@ -7,6 +7,7 @@ import { Card, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/input'
 import { useLocale } from '@/lib/i18n/context'
+import { requestPasswordReverification } from '@/lib/security/reverify-client'
 
 interface VirtualCard {
   id: string
@@ -90,7 +91,21 @@ function MyCardsCard({ isBn }: { isBn: boolean }) {
     setRevealing(card.id)
     setRevealError(null)
     try {
-      const res = await fetch(`/api/virtual-cards/${card.id}/reveal`)
+      const revealRequest = () => fetch(`/api/virtual-cards/${card.id}/reveal`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: '{}',
+      })
+      let res = await revealRequest()
+      if (res.status === 428) {
+        const password = await requestPasswordReverification(isBn ? 'এই কার্ডের তথ্য দেখার আগে আপনার পাসওয়ার্ড আবার লিখুন।' : 'Re-enter your password before revealing this card.')
+        if (!password) throw new Error(isBn ? 'পাসওয়ার্ড যাচাই বাতিল হয়েছে।' : 'Password verification was cancelled.')
+        const verified = await fetch('/api/auth/reverify', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ password }),
+        })
+        if (!verified.ok) throw new Error(isBn ? 'পাসওয়ার্ড সঠিক নয়।' : 'Password verification failed.')
+        res = await revealRequest()
+      }
       const json = await res.json().catch(() => ({}))
       if (!res.ok) {
         throw new Error(json?.message ?? (isBn ? 'কার্ডের তথ্য দেখানো যায়নি।' : 'Could not reveal card credentials.'))

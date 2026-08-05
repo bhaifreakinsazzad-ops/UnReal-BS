@@ -4,6 +4,7 @@ import type { Metadata } from 'next'
 import { getSupabaseAdmin, isSupabaseConfigured } from '@/lib/supabase/client'
 import { StorefrontShell } from '@/components/storefront/StorefrontChrome'
 import { Card } from '@/components/ui/card'
+import { storefrontEnabledForRequest } from '@/lib/commerce/flags'
 
 export const dynamic = 'force-dynamic'
 
@@ -18,6 +19,7 @@ interface StoreRow {
 }
 
 async function loadStore(storeSlug: string) {
+  if (!(await storefrontEnabledForRequest())) return null
   if (!isSupabaseConfigured()) return null
   try {
     const supabase = getSupabaseAdmin()
@@ -34,6 +36,7 @@ async function loadStore(storeSlug: string) {
       .select('id, slug, kind, title, subtitle, cover_image_url, price_bdt, sales_count')
       .eq('seller_id', seller.id)
       .eq('status', 'published')
+      .eq('platform_owned', true)
       .order('published_at', { ascending: false })
       .limit(100)
 

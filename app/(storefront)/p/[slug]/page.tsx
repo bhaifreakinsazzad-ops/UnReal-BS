@@ -3,6 +3,7 @@ import type { Metadata } from 'next'
 import { getSupabaseAdmin, isSupabaseConfigured } from '@/lib/supabase/client'
 import { StorefrontShell } from '@/components/storefront/StorefrontChrome'
 import { ProductPublicView, type PublicLesson } from '@/components/storefront/ProductPublicView'
+import { storefrontEnabledForRequest } from '@/lib/commerce/flags'
 
 export const dynamic = 'force-dynamic'
 
@@ -27,6 +28,7 @@ interface Row {
 }
 
 async function loadProduct(slug: string) {
+  if (!(await storefrontEnabledForRequest())) return null
   if (!isSupabaseConfigured()) return null
 
   try {
@@ -39,6 +41,7 @@ async function loadProduct(slug: string) {
       .select('id, seller_id, slug, kind, title, subtitle, description, cover_image_url, price_bdt, compare_at_price_bdt, delivery_note, sales_count')
       .eq('slug', slug)
       .eq('status', 'published')
+      .eq('platform_owned', true)
       .maybeSingle<Row>()
 
     if (!product) return null

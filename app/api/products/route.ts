@@ -5,7 +5,9 @@ import { checkRateLimit } from '@/lib/rate-limit'
 import { logError } from '@/lib/log-error'
 import { dbNotReady, requireSellerId } from '@/lib/commerce/guards'
 import { slugify } from '@/lib/commerce/product-rules'
-import { MAX_PRICE_BDT, splitPrice } from '@/lib/commerce/pricing'
+import { MAX_PRICE_BDT, platformSplitPrice } from '@/lib/commerce/pricing'
+import { getRequestId } from '@/lib/security/request'
+import { recordAuditEvent } from '@/lib/security/audit'
 
 export const dynamic = 'force-dynamic'
 
@@ -48,7 +50,7 @@ export async function GET() {
 
     return NextResponse.json({
       products: (data ?? []).map((p) => {
-        const split = splitPrice(Number(p.price_bdt))
+        const split = platformSplitPrice(Number(p.price_bdt))
         return {
           id: p.id,
           kind: p.kind,
@@ -84,7 +86,8 @@ export async function POST(request: Request) {
   if (resolved.error) return resolved.error
   const { userId } = resolved
 
-  const { allowed } = await checkRateLimit('product-create', userId, { max: 30, windowSeconds: 3600 })
+  const requestId = getRequestId(request)
+  const { allowed } = await checkRateLimit('product-create', userId, { max: 30, windowSeconds: 3600, failClosed: true })
   if (!allowed) {
     return NextResponse.json({ message: 'Too many products created. Try again later.' }, { status: 429 })
   }
@@ -118,6 +121,7 @@ export async function POST(request: Request) {
         .from('unreal_bs_digital_products')
         .insert({
           seller_id: userId,
+          platform_owned: true,
           kind: p.kind,
           slug: candidateSlug(p.title),
           title: p.title,
@@ -129,6 +133,7 @@ export async function POST(request: Request) {
         .single()
 
       if (!error && data) {
+        await recordAuditEvent({ eventType: 'commerce.product.created', actorUserId: userId, targetType: 'product', targetId: data.id, requestId })
         return NextResponse.json({ product: { id: data.id, slug: data.slug } }, { status: 201 })
       }
       lastError = error

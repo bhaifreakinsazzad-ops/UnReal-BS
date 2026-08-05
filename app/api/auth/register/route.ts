@@ -4,6 +4,7 @@ import bcrypt from 'bcryptjs'
 import { getSupabaseAdmin, isSupabaseConfigured } from '@/lib/supabase/client'
 import { checkRateLimit } from '@/lib/rate-limit'
 import { logError } from '@/lib/log-error'
+import { clientIp, opaqueRateKey, readJson } from '@/lib/security/request'
 
 export const dynamic = 'force-dynamic'
 
@@ -33,34 +34,18 @@ export async function POST(request: Request) {
     )
   }
 
-  let body: unknown
-  try {
-    body = await request.json()
-  } catch {
-    return NextResponse.json({ message: 'Invalid request payload.' }, { status: 400 })
-  }
-
-  const parsed = registerSchema.safeParse(body)
-  if (!parsed.success) {
-    return NextResponse.json(
-      {
-        message: 'Please check your details. Password must be at least 10 characters.',
-        errors: parsed.error.flatten(),
-      },
-      { status: 400 }
-    )
-  }
+  const parsed = await readJson(request, registerSchema, { maxBytes: 8192 })
+  if (parsed.error) return parsed.error
 
   const { email, password, businessName } = parsed.data
 
   // Fail closed: signup creates real money-holding accounts, so if the limiter
   // itself is broken we would rather refuse than allow bulk registration.
-  const { allowed } = await checkRateLimit('register', email, {
-    max: 5,
-    windowSeconds: 3600,
-    failClosed: true,
-  })
-  if (!allowed) {
+  const [emailLimit, ipLimit] = await Promise.all([
+    checkRateLimit('register-email', opaqueRateKey(email), { max: 5, windowSeconds: 3600, failClosed: true }),
+    checkRateLimit('register-ip', opaqueRateKey(clientIp(request)), { max: 15, windowSeconds: 3600, failClosed: true }),
+  ])
+  if (!emailLimit.allowed || !ipLimit.allowed) {
     return NextResponse.json(
       { message: 'Too many attempts. Please try again later.' },
       { status: 429 }
@@ -101,7 +86,7 @@ export async function POST(request: Request) {
       )
     }
     if (insertError || !created) {
-      await logError('auth-register-insert', insertError ?? new Error('no row returned'), { email })
+      await logError('auth-register-insert', insertError ?? new Error('no row returned'))
       return NextResponse.json({ message: 'Could not create your account.' }, { status: 502 })
     }
 
@@ -118,7 +103,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ ok: true, email: created.email }, { status: 201 })
   } catch (err) {
-    await logError('auth-register', err, { email })
+    await logError('auth-register', err)
     return NextResponse.json({ message: 'Could not create your account.' }, { status: 502 })
   }
 }

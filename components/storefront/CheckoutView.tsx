@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { useStoreLocale } from './StorefrontChrome'
+import { trackMetaEvent } from '@/lib/meta/client-events'
 
 interface Order {
   accessToken: string
@@ -17,6 +18,7 @@ interface Order {
   status: string
   paymentMethod: string | null
   payerReference: string | null
+  purchaseEventId?: string | null
 }
 
 interface Target {
@@ -62,6 +64,31 @@ export function CheckoutView({ accessToken }: { accessToken: string }) {
       .finally(() => setLoading(false))
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [accessToken])
+
+  useEffect(() => {
+    if (order?.status !== 'paid' || !order.purchaseEventId) return
+    const key = `unreal_bs_purchase_pixel_${order.purchaseEventId}`
+    const send = () => {
+      if (localStorage.getItem(key)) return
+      if (trackMetaEvent('Purchase', { value: order.priceBdt, currency: 'BDT' }, order.purchaseEventId ?? undefined)) {
+        localStorage.setItem(key, '1')
+      }
+    }
+    send()
+    window.addEventListener('unreal-meta-ready', send)
+    window.addEventListener('unreal-consent-change', send)
+    return () => {
+      window.removeEventListener('unreal-meta-ready', send)
+      window.removeEventListener('unreal-consent-change', send)
+    }
+  }, [order])
+
+  useEffect(() => {
+    if (order?.status !== 'verification_submitted') return
+    const timer = window.setInterval(() => void load().catch(() => undefined), 15_000)
+    return () => window.clearInterval(timer)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [order?.status])
 
   async function submit() {
     if (!form.payerReference.trim()) {
@@ -147,7 +174,7 @@ export function CheckoutView({ accessToken }: { accessToken: string }) {
     )
   }
 
-  const awaiting = order.status === 'awaiting_confirmation'
+  const awaiting = order.status === 'verification_submitted'
 
   return (
     <div className="space-y-5">

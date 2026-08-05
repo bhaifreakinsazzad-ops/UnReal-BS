@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import {
   BookOpen,
   Download,
@@ -18,7 +19,6 @@ import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { useLocale } from '@/lib/i18n/context'
-import { commissionBdt, sellerPayoutBdt } from '@/lib/commerce/pricing'
 import { absoluteUrl, productPath, shopPath } from '@/lib/commerce/links'
 
 export interface SellerProduct {
@@ -84,6 +84,7 @@ export function bdt(v: number) {
 }
 
 export function ProductsShell() {
+  const router = useRouter()
   const locale = useLocale()
   const isBn = locale === 'bn'
 
@@ -159,16 +160,12 @@ export function ProductsShell() {
       })
       const json = await res.json().catch(() => ({}))
       if (!res.ok) throw new Error(json?.message ?? 'Could not create this product.')
-      window.location.href = `/products/${json.product.id}`
+      router.push(`/products/${json.product.id}`)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not create this product.')
       setSubmitting(false)
     }
   }
-
-  const price = Number(form.priceBdt) || 0
-  const payout = sellerPayoutBdt(price)
-  const commission = commissionBdt(price)
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-6xl mx-auto">
@@ -252,27 +249,10 @@ export function ProductsShell() {
             />
           </div>
 
-          {/* The seller is told exactly what they keep before they commit to a
-              price. The same pure module writes the split into the order, so
-              this number is a promise the checkout has to honour. */}
           <div className="mt-4 rounded-lg bg-gray-50 border border-gray-200 px-4 py-3 text-sm">
-            {price === 0 ? (
-              <p className="text-gray-600">
-                {isBn
-                  ? 'ফ্রি প্রোডাক্টে কোনো কমিশন নেই। ক্রেতার নাম ও নম্বর আপনার কনট্যাক্ট লিস্টে যোগ হবে।'
-                  : 'No commission on a free product. Every buyer still becomes a contact you can follow up with.'}
-              </p>
-            ) : (
-              <div className="flex flex-wrap items-center gap-x-6 gap-y-1">
-                <span className="text-gray-600">
-                  {isBn ? 'আপনি পাবেন' : 'You receive'}{' '}
-                  <strong className="text-[#00A85F]">{bdt(payout)}</strong>
-                </span>
-                <span className="text-gray-400">
-                  {isBn ? 'প্ল্যাটফর্ম ফি' : 'Platform fee'} {bdt(commission)}
-                </span>
-              </div>
-            )}
+            <p className="text-gray-600">
+              {isBn ? 'এটি প্ল্যাটফর্মের নিজস্ব প্রোডাক্ট। বিক্রয়মূল্য সম্পূর্ণ প্ল্যাটফর্ম রাজস্ব হিসেবে রেকর্ড হবে।' : 'This is platform-owned inventory. The full sale price is recorded as platform revenue.'}
+            </p>
           </div>
 
           <div className="flex gap-2 mt-5">

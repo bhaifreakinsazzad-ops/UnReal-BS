@@ -1,10 +1,12 @@
 'use client'
 
-import { useState } from 'react'
+import { useCallback, useState } from 'react'
 import Link from 'next/link'
 import { ArrowLeft, CheckCircle2, Loader2, Send } from 'lucide-react'
 import { Input, Textarea } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
+import { TurnstileWidget } from '@/components/privacy/TurnstileWidget'
+import { captureAttribution, createMetaEventId, trackMetaEvent } from '@/lib/meta/client-events'
 
 interface EligibilityApplicationProps {
   intent?: string
@@ -17,6 +19,8 @@ const preferredContacts = ['WhatsApp', 'Phone', 'Email']
 export function EligibilityApplication({ intent, service }: EligibilityApplicationProps) {
   const [status, setStatus] = useState<'idle' | 'submitting' | 'success' | 'error'>('idle')
   const [message, setMessage] = useState('')
+  const [turnstileToken, setTurnstileToken] = useState('')
+  const handleTurnstileToken = useCallback((token: string) => setTurnstileToken(token), [])
 
   async function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -24,13 +28,15 @@ export function EligibilityApplication({ intent, service }: EligibilityApplicati
     setMessage('')
 
     const formData = new FormData(event.currentTarget)
+    const eventId = createMetaEventId()
+    const attribution = { ...captureAttribution(), eventId }
     const payload = Object.fromEntries(formData.entries())
 
     try {
       const response = await fetch('/api/applications', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...payload, intent, service }),
+        body: JSON.stringify({ ...payload, intent, service, turnstileToken, ...attribution }),
       })
       const data = await response.json().catch(() => ({}))
 
@@ -40,6 +46,7 @@ export function EligibilityApplication({ intent, service }: EligibilityApplicati
 
       setStatus('success')
       setMessage('Application received. Our team will verify eligibility.')
+      trackMetaEvent('Lead', {}, eventId)
       event.currentTarget.reset()
     } catch (error) {
       setStatus('error')
@@ -131,6 +138,7 @@ export function EligibilityApplication({ intent, service }: EligibilityApplicati
                   <SelectField name="preferredContact" label="Preferred Contact" options={preferredContacts} defaultValue="WhatsApp" />
                 </div>
                 <input type="hidden" name="campaignKeyword" value="HIGH LEVEL" />
+                <TurnstileWidget onToken={handleTurnstileToken} />
                 {/* Honeypot: hidden off-screen (not display:none) so simple
                     bots that fill every visible-in-DOM field still trip it,
                     while real users never see or reach it. */}

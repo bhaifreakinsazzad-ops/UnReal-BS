@@ -5,6 +5,7 @@ import { AlertTriangle, CheckCircle2, Loader2, RotateCcw, Search, XCircle } from
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
+import { requestPasswordReverification } from '@/lib/security/reverify-client'
 
 interface Order {
   id: string
@@ -29,7 +30,7 @@ interface Order {
 }
 
 const STATUS: Record<string, { label: string; tone: string }> = {
-  awaiting_confirmation: { label: 'Waiting on you', tone: 'bg-amber-50 text-amber-700' },
+  verification_submitted: { label: 'Waiting on you', tone: 'bg-amber-50 text-amber-700' },
   paid: { label: 'Paid', tone: 'bg-green-50 text-green-700' },
   rejected: { label: 'Rejected', tone: 'bg-red-50 text-red-700' },
   refunded: { label: 'Refunded', tone: 'bg-gray-100 text-gray-600' },
@@ -62,23 +63,45 @@ export function AdminOrdersShell() {
   }, [])
 
   async function act(orderId: string, action: 'confirm' | 'reject' | 'refund') {
+    const order = orders.find((entry) => entry.id === orderId)
+    if (!order) return
+    const reason = notes[orderId]?.trim()
+    if (!reason) {
+      setError('Add an operator reason before changing an order.')
+      return
+    }
     if (action === 'refund' && !window.confirm('Refund this order and take the money back from the seller?')) {
       return
     }
+    const refundReference = action === 'refund' ? window.prompt('Enter the refund transaction/reference ID:')?.trim() : undefined
+    if (action === 'refund' && !refundReference) return
+    const idempotencyKey = crypto.randomUUID().replace(/-/g, '')
     setBusy(orderId)
     setError(null)
     setNotice(null)
     try {
-      const res = await fetch('/api/admin/orders', {
+      const mutate = () => fetch('/api/admin/orders', {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ orderId, action, note: notes[orderId]?.trim() || undefined }),
+        headers: { 'Content-Type': 'application/json', 'Idempotency-Key': idempotencyKey },
+        body: JSON.stringify({ orderId, action, expectedStatus: order.status, reason, refundReference }),
       })
+      let res = await mutate()
+      if (res.status === 428) {
+        const password = await requestPasswordReverification('Re-enter your password to authorize this money operation.')
+        if (!password) throw new Error('Password re-verification was cancelled.')
+        const verified = await fetch('/api/auth/reverify', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ password }),
+        })
+        if (!verified.ok) throw new Error('Password verification failed.')
+        res = await mutate()
+      }
       const json = await res.json().catch(() => ({}))
       if (!res.ok) throw new Error(json?.message ?? 'Could not update this order.')
       setNotice(
         action === 'confirm'
-          ? 'Confirmed. The seller has been credited.'
+          ? 'Confirmed. Buyer access is active and platform revenue is recorded.'
           : action === 'refund'
             ? 'Refunded.'
             : 'Rejected.'
@@ -100,12 +123,12 @@ export function AdminOrdersShell() {
       )
     : orders
 
-  const waiting = filtered.filter((o) => o.status === 'awaiting_confirmation')
-  const rest = filtered.filter((o) => o.status !== 'awaiting_confirmation')
+  const waiting = filtered.filter((o) => o.status === 'verification_submitted')
+  const rest = filtered.filter((o) => o.status !== 'verification_submitted')
 
   function renderOrder(o: Order) {
     const s = STATUS[o.status] ?? STATUS.pending_payment
-    const actionable = o.status === 'awaiting_confirmation'
+    const actionable = o.status === 'verification_submitted'
     return (
       <Card key={o.id} className="space-y-3">
         <div className="flex flex-wrap items-start justify-between gap-3">
@@ -115,15 +138,11 @@ export function AdminOrdersShell() {
               {o.buyerName} · {o.buyerPhone}
               {o.buyerEmail ? ` · ${o.buyerEmail}` : ''}
             </p>
-            <p className="text-xs text-gray-400 mt-0.5">
-              Seller: {o.sellerName ?? o.sellerEmail ?? '—'}
-            </p>
+            <p className="text-xs text-gray-400 mt-0.5">Platform-owned inventory</p>
           </div>
           <div className="text-right shrink-0">
             <p className="text-base font-bold text-gray-900">{bdt(o.priceBdt)}</p>
-            <p className="text-[11px] text-gray-400">
-              seller {bdt(o.sellerPayoutBdt)} · fee {bdt(o.commissionBdt)}
-            </p>
+            <p className="text-[11px] text-gray-400">platform revenue {bdt(o.priceBdt)}</p>
             <span className={`inline-block mt-1 text-xs font-semibold px-2 py-0.5 rounded-full ${s.tone}`}>
               {s.label}
             </span>
@@ -147,8 +166,7 @@ export function AdminOrdersShell() {
         {o.status === 'paid' && !o.ghlSynced && (
           <p className="text-xs text-amber-700 flex items-center gap-1.5">
             <AlertTriangle className="w-3.5 h-3.5" />
-            Buyer was not added to the seller&apos;s GHL contacts — the seller has no workspace
-            connected, or GHL was unreachable. The sale itself is fine.
+            Buyer sync to GHL is still pending. The sale itself is recorded.
           </p>
         )}
 
@@ -157,7 +175,7 @@ export function AdminOrdersShell() {
         {actionable && (
           <div className="space-y-2 pt-1">
             <Input
-              placeholder="Note (optional) — shown to the buyer if you reject"
+              placeholder="Operator reason (required)"
               value={notes[o.id] ?? ''}
               onChange={(e) => setNotes((n) => ({ ...n, [o.id]: e.target.value }))}
             />
@@ -205,7 +223,7 @@ export function AdminOrdersShell() {
         <h1 className="text-2xl font-bold text-gray-900">Product Orders</h1>
         <p className="text-sm text-gray-500 mt-1 max-w-2xl">
           Match each TrxID against the bKash/Nagad statement before confirming. Confirming is what
-          credits the seller — it is not reversible without a refund.
+          grants buyer access and records platform revenue. A refund requires its own transfer reference.
         </p>
       </div>
 

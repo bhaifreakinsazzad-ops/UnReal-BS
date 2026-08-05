@@ -96,3 +96,10 @@ export function splitPrice(priceBdt: number): PriceSplit {
   const commission = commissionBdt(price)
   return { priceBdt: price, commissionBdt: commission, sellerPayoutBdt: price - commission }
 }
+
+/** Launch split for platform inventory. The platform is the merchant of
+ * record, so the full price is platform revenue and no seller payable exists. */
+export function platformSplitPrice(priceBdt: number): PriceSplit {
+  const price = Number.isFinite(priceBdt) && priceBdt > 0 ? Math.round(priceBdt) : 0
+  return { priceBdt: price, commissionBdt: price, sellerPayoutBdt: 0 }
+}

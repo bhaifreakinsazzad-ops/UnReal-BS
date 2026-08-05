@@ -5,6 +5,7 @@ import { AlertTriangle, CreditCard, Loader2 } from 'lucide-react'
 import { Card, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input, Textarea } from '@/components/ui/input'
+import { requestPasswordReverification } from '@/lib/security/reverify-client'
 
 interface PendingOrder {
   id: string
@@ -113,9 +114,10 @@ function AssignOrderCard({
 
     onAssigning(order.id)
     try {
-      const res = await fetch('/api/admin/virtual-cards/assign', {
+      const idempotencyKey = crypto.randomUUID().replace(/-/g, '')
+      const assign = () => fetch('/api/admin/virtual-cards/assign', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'Idempotency-Key': idempotencyKey },
         body: JSON.stringify({
           orderId: order.id,
           label,
@@ -127,6 +129,16 @@ function AssignOrderCard({
           chargedAmountBdt: Number(chargedAmountBdt),
         }),
       })
+      let res = await assign()
+      if (res.status === 428) {
+        const password = await requestPasswordReverification('Re-enter your password to authorize this card assignment.')
+        if (!password) throw new Error('Password verification was cancelled.')
+        const verified = await fetch('/api/auth/reverify', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ password }),
+        })
+        if (!verified.ok) throw new Error('Password verification failed.')
+        res = await assign()
+      }
       const json = await res.json().catch(() => ({}))
       if (!res.ok) {
         throw new Error(json?.message ?? 'Assignment failed.')

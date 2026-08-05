@@ -27,11 +27,8 @@ const ALLOWED_MIME = new Set([
   'application/zip',
   'application/x-zip-compressed',
   'application/epub+zip',
-  'application/msword',
   'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-  'application/vnd.ms-excel',
   'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-  'application/vnd.ms-powerpoint',
   'application/vnd.openxmlformats-officedocument.presentationml.presentation',
   'text/plain',
   'text/csv',
@@ -41,6 +38,29 @@ const ALLOWED_MIME = new Set([
   'audio/mpeg',
   'video/mp4',
 ])
+
+const ALLOWED_EXTENSIONS = new Set([
+  '.pdf', '.zip', '.epub', '.docx', '.xlsx', '.pptx',
+  '.txt', '.csv', '.png', '.jpg', '.jpeg', '.webp', '.mp3', '.mp4',
+])
+const REJECTED_EXTENSIONS = /\.(?:html?|svg|js|mjs|cjs|jsx|ts|tsx|exe|dll|msi|bat|cmd|ps1|sh|php|py|rb|jar|scr|com)$/i
+
+async function hasExpectedSignature(file: File, mime: string): Promise<boolean> {
+  const bytes = new Uint8Array(await file.slice(0, 32).arrayBuffer())
+  const starts = (...values: number[]) => values.every((value, index) => bytes[index] === value)
+  if (mime === 'application/pdf') return starts(0x25, 0x50, 0x44, 0x46)
+  if (mime.includes('zip') || mime.includes('openxml')) return starts(0x50, 0x4b)
+  if (mime === 'image/png') return starts(0x89, 0x50, 0x4e, 0x47)
+  if (mime === 'image/jpeg') return starts(0xff, 0xd8, 0xff)
+  if (mime === 'image/webp') return starts(0x52, 0x49, 0x46, 0x46) && String.fromCharCode(...bytes.slice(8, 12)) === 'WEBP'
+  if (mime === 'video/mp4') return String.fromCharCode(...bytes.slice(4, 8)) === 'ftyp'
+  if (mime === 'audio/mpeg') return starts(0x49, 0x44, 0x33) || (bytes[0] === 0xff && (bytes[1] & 0xe0) === 0xe0)
+  if (mime === 'text/plain' || mime === 'text/csv') {
+    const sample = new TextDecoder().decode(bytes).trimStart().toLowerCase()
+    return !bytes.includes(0) && !sample.startsWith('<!doctype') && !sample.startsWith('<html') && !sample.startsWith('<script') && !sample.startsWith('#!')
+  }
+  return true
+}
 
 /** Strips directory traversal and anything that would confuse a storage path.
  *  The stored path is generated anyway; this only keeps the display name sane. */
@@ -66,6 +86,7 @@ export async function POST(
   const { allowed } = await checkRateLimit('product-asset-upload', userId, {
     max: 60,
     windowSeconds: 3600,
+    failClosed: true,
   })
   if (!allowed) {
     return NextResponse.json({ message: 'Too many uploads. Try again later.' }, { status: 429 })
@@ -98,7 +119,8 @@ export async function POST(
   }
 
   const mime = file.type || 'application/octet-stream'
-  if (!ALLOWED_MIME.has(mime)) {
+  const extension = /\.[A-Za-z0-9]+$/.exec(file.name)?.[0]?.toLowerCase() ?? ''
+  if (!ALLOWED_MIME.has(mime) || !ALLOWED_EXTENSIONS.has(extension) || REJECTED_EXTENSIONS.test(file.name) || !(await hasExpectedSignature(file, mime))) {
     return NextResponse.json(
       { message: 'That file type is not supported. Use PDF, ZIP, DOCX, XLSX, images, audio or MP4.' },
       { status: 415 }

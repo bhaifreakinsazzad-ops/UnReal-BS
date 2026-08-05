@@ -3,8 +3,10 @@ import { z } from 'zod'
 import { getSupabaseAdmin } from '@/lib/supabase/client'
 import { checkRateLimit } from '@/lib/rate-limit'
 import { logError } from '@/lib/log-error'
-import { dbNotReady, requireSellerId } from '@/lib/commerce/guards'
+import { dbNotReady, marketplaceDisabled, requireSellerId } from '@/lib/commerce/guards'
 import { MIN_PAYOUT_BDT } from '@/lib/commerce/pricing'
+import { auth } from '@/auth'
+import { hasFreshStepUp } from '@/lib/security/step-up'
 
 export const dynamic = 'force-dynamic'
 
@@ -22,11 +24,18 @@ const createSchema = z.object({
 })
 
 export async function POST(request: Request) {
+  const disabled = marketplaceDisabled()
+  if (disabled) return disabled
   const resolved = await requireSellerId()
   if (resolved.error) return resolved.error
   const { userId } = resolved
+  const session = await auth()
+  const email = session?.user?.email?.trim().toLowerCase()
+  if (!email || !hasFreshStepUp(request, email)) {
+    return NextResponse.json({ message: 'Re-enter your password before requesting a payout.', code: 'REVERIFY_REQUIRED' }, { status: 428 })
+  }
 
-  const { allowed } = await checkRateLimit('payout-request', userId, { max: 10, windowSeconds: 86_400 })
+  const { allowed } = await checkRateLimit('payout-request', userId, { max: 10, windowSeconds: 86_400, failClosed: true })
   if (!allowed) {
     return NextResponse.json(
       { message: 'Too many payout requests today. Try again tomorrow.' },

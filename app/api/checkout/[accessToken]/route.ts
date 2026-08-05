@@ -3,47 +3,48 @@ import { z } from 'zod'
 import { getSupabaseAdmin, isSupabaseConfigured } from '@/lib/supabase/client'
 import { checkRateLimit } from '@/lib/rate-limit'
 import { logError } from '@/lib/log-error'
+import { hashAccessToken } from '@/lib/commerce/access-token'
+import { storefrontEnabledForRequest } from '@/lib/commerce/flags'
 import { isGatewayConfigured, manualPaymentTargets } from '@/lib/commerce/payment-provider'
+import { recordAuditEvent } from '@/lib/security/audit'
+import { clientIp, opaqueRateKey, readJson } from '@/lib/security/request'
 
 export const dynamic = 'force-dynamic'
 
-// PUBLIC, keyed on the order's unguessable access token. That token is the
-// buyer's only credential — it is what lets somebody with no account come back
-// to their order from an SMS link.
-
 const patchSchema = z.object({
   method: z.enum(['bkash', 'nagad', 'rocket']),
-  payerReference: z.string().trim().min(4).max(60),
+  payerReference: z.string().trim().min(4).max(60).regex(/^[A-Za-z0-9-]+$/),
   payerMsisdn: z.string().trim().max(30).optional(),
 })
+const TOKEN = /^[A-Za-z0-9_-]{40,64}$/
 
-const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
-
-export async function GET(
-  _request: Request,
-  { params }: { params: Promise<{ accessToken: string }> }
-) {
+export async function GET(_request: Request, { params }: { params: Promise<{ accessToken: string }> }) {
+  if (!(await storefrontEnabledForRequest())) return new NextResponse(null, { status: 404 })
   const { accessToken } = await params
-  if (!UUID.test(accessToken)) {
-    return NextResponse.json({ message: 'Order not found.' }, { status: 404 })
-  }
-  if (!isSupabaseConfigured()) {
-    return NextResponse.json({ message: 'Checkout is not available right now.' }, { status: 502 })
+  if (!TOKEN.test(accessToken)) return NextResponse.json({ message: 'Order not found.' }, { status: 404 })
+  if (!isSupabaseConfigured()) return NextResponse.json({ message: 'Checkout is not available right now.' }, { status: 502 })
+
+  const accessHash = hashAccessToken(accessToken)
+  const accessLimit = await checkRateLimit('checkout-access-token-read', accessHash, {
+    max: 60,
+    windowSeconds: 3600,
+    failClosed: true,
+  })
+  if (!accessLimit.allowed) {
+    return NextResponse.json({ message: 'Too many attempts. Please try again later.' }, { status: 429 })
   }
 
   try {
-    const supabase = getSupabaseAdmin()
-    const { data: order } = await supabase
+    const { data: order } = await getSupabaseAdmin()
       .from('unreal_bs_orders')
-      .select('access_token, product_title, product_kind, buyer_name, buyer_phone, price_bdt, status, payment_method, payer_reference, paid_at, created_at')
-      .eq('access_token', accessToken)
+      .select('product_title, product_kind, buyer_name, buyer_phone, price_bdt, status, payment_method, payer_reference, paid_at, created_at, purchase_event_id')
+      .eq('access_token_hash', accessHash)
       .maybeSingle()
-
     if (!order) return NextResponse.json({ message: 'Order not found.' }, { status: 404 })
 
     return NextResponse.json({
       order: {
-        accessToken: order.access_token,
+        accessToken,
         productTitle: order.product_title,
         productKind: order.product_kind,
         buyerName: order.buyer_name,
@@ -51,94 +52,65 @@ export async function GET(
         priceBdt: Number(order.price_bdt),
         status: order.status,
         paymentMethod: order.payment_method,
-        payerReference: order.payer_reference,
+        payerReference: order.payer_reference ? `***${String(order.payer_reference).slice(-4)}` : null,
+        purchaseEventId: order.status === 'paid' ? order.purchase_event_id : null,
         paidAt: order.paid_at,
         createdAt: order.created_at,
       },
-      payment: {
-        manual: !isGatewayConfigured(),
-        targets: Number(order.price_bdt) === 0 ? [] : manualPaymentTargets(),
-      },
-    })
+      payment: { manual: !isGatewayConfigured(), targets: Number(order.price_bdt) === 0 ? [] : manualPaymentTargets() },
+    }, { headers: { 'cache-control': 'no-store' } })
   } catch (err) {
     await logError('checkout-status', err)
     return NextResponse.json({ message: 'Could not load your order.' }, { status: 502 })
   }
 }
-
-export async function PATCH(
-  request: Request,
-  { params }: { params: Promise<{ accessToken: string }> }
-) {
+export async function PATCH(request: Request, { params }: { params: Promise<{ accessToken: string }> }) {
+  if (!(await storefrontEnabledForRequest())) return new NextResponse(null, { status: 404 })
   const { accessToken } = await params
-  if (!UUID.test(accessToken)) {
-    return NextResponse.json({ message: 'Order not found.' }, { status: 404 })
-  }
-  if (!isSupabaseConfigured()) {
-    return NextResponse.json({ message: 'Checkout is not available right now.' }, { status: 502 })
-  }
+  if (!TOKEN.test(accessToken)) return NextResponse.json({ message: 'Order not found.' }, { status: 404 })
+  if (!isSupabaseConfigured()) return NextResponse.json({ message: 'Checkout is not available right now.' }, { status: 502 })
 
-  const { allowed } = await checkRateLimit('checkout-trxid', accessToken, {
-    max: 15,
-    windowSeconds: 3600,
-  })
-  if (!allowed) {
+  const parsed = await readJson(request, patchSchema, { maxBytes: 8192 })
+  if (parsed.error) return parsed.error
+  const accessHash = hashAccessToken(accessToken)
+  const [tokenLimit, referenceLimit, ipLimit] = await Promise.all([
+    checkRateLimit('checkout-access-token', accessHash, { max: 15, windowSeconds: 3600, failClosed: true }),
+    checkRateLimit('checkout-payment-reference', opaqueRateKey(`${parsed.data.method}:${parsed.data.payerReference}`), { max: 5, windowSeconds: 86400, failClosed: true }),
+    checkRateLimit('checkout-submit-ip', opaqueRateKey(clientIp(request)), { max: 30, windowSeconds: 3600, failClosed: true }),
+  ])
+  if (!tokenLimit.allowed || !referenceLimit.allowed || !ipLimit.allowed) {
     return NextResponse.json({ message: 'Too many attempts. Please try again later.' }, { status: 429 })
   }
 
-  let body: unknown
   try {
-    body = await request.json()
-  } catch {
-    return NextResponse.json({ message: 'Invalid request payload.' }, { status: 400 })
-  }
-
-  const parsed = patchSchema.safeParse(body)
-  if (!parsed.success) {
-    return NextResponse.json(
-      { message: 'Enter the Transaction ID from your payment SMS.' },
-      { status: 400 }
-    )
-  }
-
-  const p = parsed.data
-
-  try {
-    const supabase = getSupabaseAdmin()
-
-    // The status guard is in the UPDATE predicate rather than in a preceding
-    // read: submitting a TrxID must never touch an order that has already been
-    // confirmed, rejected or refunded, and doing it this way there is no
-    // window between the check and the write.
-    const { data, error } = await supabase
+    const { data, error } = await getSupabaseAdmin()
       .from('unreal_bs_orders')
       .update({
-        status: 'awaiting_confirmation',
-        payment_method: p.method,
-        payer_reference: p.payerReference,
-        payer_msisdn: p.payerMsisdn ?? null,
+        status: 'verification_submitted',
+        payment_method: parsed.data.method,
+        payer_reference: parsed.data.payerReference,
+        payer_msisdn: parsed.data.payerMsisdn ?? null,
+        verification_submitted_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       })
-      .eq('access_token', accessToken)
-      .in('status', ['pending_payment', 'awaiting_confirmation'])
-      .select('access_token, status')
+      .eq('access_token_hash', accessHash)
+      .in('status', ['pending_payment', 'verification_submitted'])
+      .select('id, status')
       .maybeSingle()
 
+    if (error?.code === '23505') {
+      return NextResponse.json({ message: 'That payment reference has already been used.' }, { status: 409 })
+    }
     if (error) {
-      await logError('checkout-submit-trxid', error)
+      await logError('checkout-submit-reference', error, { requestId: parsed.requestId })
       return NextResponse.json({ message: 'Could not save that Transaction ID.' }, { status: 502 })
     }
+    if (!data) return NextResponse.json({ message: 'This order has already been processed. Check your access link.' }, { status: 409 })
 
-    if (!data) {
-      return NextResponse.json(
-        { message: 'This order has already been processed. Check your access link.' },
-        { status: 409 }
-      )
-    }
-
-    return NextResponse.json({ order: { accessToken: data.access_token, status: data.status } })
+    await recordAuditEvent({ eventType: 'commerce.payment_verification_submitted', targetType: 'order', targetId: data.id, requestId: parsed.requestId, metadata: { provider: parsed.data.method } })
+    return NextResponse.json({ order: { accessToken, status: data.status } }, { headers: { 'x-request-id': parsed.requestId, 'cache-control': 'no-store' } })
   } catch (err) {
-    await logError('checkout-submit-trxid', err)
+    await logError('checkout-submit-reference', err, { requestId: parsed.requestId })
     return NextResponse.json({ message: 'Could not save that Transaction ID.' }, { status: 502 })
   }
 }

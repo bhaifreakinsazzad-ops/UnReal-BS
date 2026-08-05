@@ -1,9 +1,7 @@
-import { SalesShell } from '@/components/products/SalesShell'
+import { notFound } from 'next/navigation'
 
-export const metadata = { title: 'Sales & Earnings - UNREAL BS' }
-
-export const dynamic = 'force-dynamic'
+export const metadata = { title: 'Sales - UNREAL BS' }
 
 export default function SalesPage() {
-  return <SalesShell />
+  notFound()
 }

@@ -3,8 +3,10 @@ import { z } from 'zod'
 import { getSupabaseAdmin } from '@/lib/supabase/client'
 import { logError } from '@/lib/log-error'
 import { dbNotReady, requireOwnedProduct, requireSellerId } from '@/lib/commerce/guards'
-import { MAX_PRICE_BDT, isSellablePrice, splitPrice } from '@/lib/commerce/pricing'
+import { MAX_PRICE_BDT, isSellablePrice, platformSplitPrice } from '@/lib/commerce/pricing'
 import { validateForPublish, type ProductKind } from '@/lib/commerce/product-rules'
+import { getRequestId } from '@/lib/security/request'
+import { recordAuditEvent } from '@/lib/security/audit'
 
 export const dynamic = 'force-dynamic'
 
@@ -65,7 +67,7 @@ export async function GET(
         .order('position', { ascending: true }),
     ])
 
-    const split = splitPrice(Number(product.price_bdt))
+    const split = platformSplitPrice(Number(product.price_bdt))
 
     return NextResponse.json({
       product: {
@@ -127,6 +129,7 @@ export async function PATCH(
   if (resolved.error) return resolved.error
   const { userId } = resolved
   const { productId } = await params
+  const requestId = getRequestId(request)
 
   let body: unknown
   try {
@@ -254,6 +257,14 @@ export async function PATCH(
         return dbNotReady()
       }
     }
+
+    await recordAuditEvent({
+      eventType: action ? `commerce.product.${action}` : 'commerce.product.updated',
+      actorUserId: userId,
+      targetType: 'product',
+      targetId: productId,
+      requestId,
+    })
 
     return NextResponse.json({ ok: true })
   } catch (err) {

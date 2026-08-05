@@ -7,7 +7,7 @@ export default function PrivacyPage() {
   return (
     <main className="mx-auto max-w-3xl px-6 py-16 text-[#0D0D1A]">
       <h1 className="text-3xl font-bold">Privacy Policy</h1>
-      <p className="mt-2 text-sm text-neutral-500">Last updated: 2026</p>
+      <p className="mt-2 text-sm text-neutral-500">Last updated: 5 August 2026</p>
 
       <div className="mt-8 space-y-6 text-sm leading-relaxed text-neutral-700">
         <section>
@@ -15,8 +15,10 @@ export default function PrivacyPage() {
           <p className="mt-2">
             When you submit the eligibility application or contact us, we collect the information
             you provide: business name, owner name, phone number, email address, business type,
-            service area, and details about your business needs. We do not collect payment card
-            or banking information through this site.
+            service area, and details about your business needs. If you purchase a platform
+            product, we also collect buyer contact details, the selected mobile-financial-service
+            provider, and the transfer reference needed for manual verification. We never ask for
+            a payment PIN, password, OTP, or full payment-card credential.
           </p>
         </section>
 
@@ -32,9 +34,32 @@ export default function PrivacyPage() {
         <section>
           <h2 className="text-lg font-semibold text-[#0D0D1A]">What we don&apos;t do</h2>
           <p className="mt-2">
-            We do not sell your information to third parties. We do not share it outside the
-            UnReal BS team except with service providers (such as GoHighLevel, our CRM and
-            communications platform) strictly to operate the service.
+            We do not sell your information to third parties. We share only the minimum required
+            with service providers used to operate the service, such as GoHighLevel for CRM and,
+            after marketing consent, Meta for campaign measurement as described below.
+          </p>
+        </section>
+
+        <section>
+          <h2 className="text-lg font-semibold text-[#0D0D1A]">Meta measurement and consent</h2>
+          <p className="mt-2">
+            Meta Pixel is not loaded until you allow marketing measurement. With consent, we may
+            send page, application, checkout, and confirmed-purchase events to Meta. Email and
+            phone identifiers are normalized and SHA-256 hashed before server-side transmission.
+            Browser and server events share an event ID so Meta can deduplicate them. A submitted
+            payment reference is never treated as a purchase; Purchase is sent only after payment
+            is confirmed.
+          </p>
+        </section>
+
+        <section>
+          <h2 className="text-lg font-semibold text-[#0D0D1A]">Attribution and retention</h2>
+          <p className="mt-2">
+            We may retain bounded campaign parameters, fbclid, landing page, referrer, consent
+            version, and event IDs for attribution and fraud investigation. Attribution records
+            are kept only as long as needed for measurement and support, normally no longer than
+            13 months, while transaction and audit records may be retained longer where required
+            for accounting, disputes, security, or law.
           </p>
         </section>
 
@@ -50,8 +75,10 @@ export default function PrivacyPage() {
         <section>
           <h2 className="text-lg font-semibold text-[#0D0D1A]">Your choices</h2>
           <p className="mt-2">
-            You can ask us to correct or delete your information at any time by contacting us
-            using the details below.
+            Use the Privacy choices control on the site to withdraw marketing consent at any time.
+            Withdrawal stops future Meta events but cannot recall events already processed by a
+            provider. You can also ask us to correct or delete eligible information by contacting
+            us using the details below.
           </p>
         </section>
 

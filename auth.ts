@@ -3,6 +3,9 @@ import Credentials from 'next-auth/providers/credentials'
 import bcrypt from 'bcryptjs'
 import { getSupabaseAdmin, isSupabaseConfigured } from '@/lib/supabase/client'
 import { checkRateLimit } from '@/lib/rate-limit'
+import { clientIp, opaqueRateKey } from '@/lib/security/request'
+import { isAdminEmail, secureStringEqual } from '@/lib/security/admin'
+import { ABSOLUTE_SESSION_TTL_SECONDS, enforceAbsoluteSession } from '@/lib/security/session'
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   secret: process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET,
@@ -12,7 +15,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         email: { label: 'Email', type: 'email' },
         password: { label: 'Password', type: 'password' },
       },
-      async authorize(credentials) {
+      async authorize(credentials, request) {
         // Normalised the same way registration stores it
         // (app/api/auth/register/route.ts lowercases via zod). Without this a
         // user who registers as "Shop@Example.com" and later types
@@ -34,12 +37,26 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         // failClosed: the whole product sits behind one shared admin
         // credential, so if the limiter itself breaks we must refuse logins
         // rather than hand an attacker an unthrottled brute-force window.
-        const { allowed } = await checkRateLimit('login', email, {
+        const emailLimit = await checkRateLimit('login-email', opaqueRateKey(email), {
           max: 10,
           windowSeconds: 900,
           failClosed: true,
         })
-        if (!allowed) return null
+        const ipLimit = await checkRateLimit('login-ip', opaqueRateKey(clientIp(request)), {
+          max: 30,
+          windowSeconds: 900,
+          failClosed: true,
+        })
+        if (!emailLimit.allowed || !ipLimit.allowed) return null
+
+        // The platform operator is intentionally checked before the user
+        // table. Platform commerce may create a non-login owner row for the
+        // same email to satisfy relational ownership without shadowing the
+        // environment-controlled operator credential.
+        const adminPassword = process.env.ADMIN_PASSWORD
+        if (isAdminEmail(email) && secureStringEqual(adminPassword, password)) {
+          return { id: '1', name: 'Admin', email }
+        }
 
         // Try real user accounts first. If Supabase isn't configured, the
         // migration hasn't been run yet, or the lookup errors for any other
@@ -64,12 +81,12 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
               return null
             }
           } catch (err) {
-            console.error('Supabase auth lookup failed, falling back to admin login:', err)
+            void err
+            console.error('Supabase auth lookup failed; rejecting database-backed login')
           }
         }
 
         const adminEmail = process.env.ADMIN_EMAIL?.trim().toLowerCase()
-        const adminPassword = process.env.ADMIN_PASSWORD
 
         if (!adminEmail || !adminPassword) {
           console.error('ADMIN_EMAIL / ADMIN_PASSWORD are not configured - rejecting all logins')
@@ -78,9 +95,6 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
         // Email is compared case-insensitively (both sides normalised); the
         // password is still an exact match.
-        if (email === adminEmail && password === adminPassword) {
-          return { id: '1', name: 'Admin', email: adminEmail }
-        }
         return null
       },
     }),
@@ -88,6 +102,12 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   pages: {
     signIn: '/login',
   },
-  session: { strategy: 'jwt' },
+  callbacks: {
+    jwt({ token, user }) {
+      return enforceAbsoluteSession(token, Boolean(user))
+    },
+  },
+  session: { strategy: 'jwt', maxAge: ABSOLUTE_SESSION_TTL_SECONDS },
+  jwt: { maxAge: ABSOLUTE_SESSION_TTL_SECONDS },
   trustHost: true,
 })

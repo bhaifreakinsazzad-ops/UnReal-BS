@@ -1,100 +1,70 @@
+import { randomUUID } from 'node:crypto'
 import { NextResponse } from 'next/server'
 import { z } from 'zod'
 import { getSupabaseAdmin, isSupabaseConfigured } from '@/lib/supabase/client'
 import { checkRateLimit } from '@/lib/rate-limit'
 import { logError } from '@/lib/log-error'
-import { splitPrice } from '@/lib/commerce/pricing'
+import { generateAccessToken } from '@/lib/commerce/access-token'
+import { storefrontEnabledForRequest } from '@/lib/commerce/flags'
+import { platformSplitPrice } from '@/lib/commerce/pricing'
 import { syncOrderToGhl } from '@/lib/commerce/ghl-sync'
 import { isGatewayConfigured, manualPaymentTargets } from '@/lib/commerce/payment-provider'
+import { attributionColumns, attributionSchema } from '@/lib/meta/attribution'
+import { sendMetaEvent } from '@/lib/meta/capi'
+import { clientIp, opaqueRateKey, readJson } from '@/lib/security/request'
 
 export const dynamic = 'force-dynamic'
-
-// PUBLIC. No session, no account. A buyer arrives from a Facebook or WhatsApp
-// link, gives a name and a phone number, and gets an order.
-//
-// Phone rather than email is the required identity because in Bangladesh
-// everyone has a mobile number and a large share of buyers have no email they
-// check. The access link is unguessable, so it can be sent over SMS.
 
 const checkoutSchema = z.object({
   slug: z.string().trim().min(1).max(120),
   buyerName: z.string().trim().min(1).max(120),
-  // Deliberately permissive: 01712345678, +8801712345678 and 01712-345678 are
-  // all the same number to a human, and rejecting a real customer over a dash
-  // costs a sale.
   buyerPhone: z.string().trim().min(6).max(30),
   buyerEmail: z.string().trim().email().max(200).optional().or(z.literal('')),
-})
-
-function clientIp(request: Request): string {
-  // x-forwarded-for is spoofable, so this alone is not a defence. The
-  // per-product limit below is the one that actually holds.
-  const fwd = request.headers.get('x-forwarded-for')
-  return fwd?.split(',')[0]?.trim() || 'unknown'
-}
+}).extend(attributionSchema.shape)
 
 export async function POST(request: Request) {
-  if (!isSupabaseConfigured()) {
-    return NextResponse.json({ message: 'Checkout is not available right now.' }, { status: 502 })
-  }
+  if (!(await storefrontEnabledForRequest())) return new NextResponse(null, { status: 404 })
+  if (!isSupabaseConfigured()) return NextResponse.json({ message: 'Checkout is not available right now.' }, { status: 502 })
 
-  let body: unknown
-  try {
-    body = await request.json()
-  } catch {
-    return NextResponse.json({ message: 'Invalid request payload.' }, { status: 400 })
-  }
-
-  const parsed = checkoutSchema.safeParse(body)
-  if (!parsed.success) {
-    return NextResponse.json(
-      { message: 'Please enter your name and mobile number.', errors: parsed.error.flatten() },
-      { status: 400 }
-    )
-  }
-
+  const parsed = await readJson(request, checkoutSchema, { maxBytes: 16 * 1024 })
+  if (parsed.error) return parsed.error
   const { slug, buyerName, buyerPhone } = parsed.data
   const buyerEmail = parsed.data.buyerEmail || null
-
   const ip = clientIp(request)
-  const byIp = await checkRateLimit('checkout-ip', ip, { max: 20, windowSeconds: 3600 })
-  if (!byIp.allowed) {
-    return NextResponse.json({ message: 'Too many attempts. Please try again later.' }, { status: 429 })
+
+  const [ipLimit, buyerLimit] = await Promise.all([
+    checkRateLimit('checkout-ip', opaqueRateKey(ip), { max: 20, windowSeconds: 3600, failClosed: true }),
+    checkRateLimit('checkout-buyer', opaqueRateKey(buyerPhone), { max: 10, windowSeconds: 3600, failClosed: true }),
+  ])
+  if (!ipLimit.allowed || !buyerLimit.allowed) {
+    return NextResponse.json({ message: 'Too many attempts. Please try again later.' }, { status: 429, headers: { 'x-request-id': parsed.requestId } })
   }
 
   try {
     const supabase = getSupabaseAdmin()
-
     const { data: product } = await supabase
       .from('unreal_bs_digital_products')
-      .select('id, seller_id, kind, title, price_bdt, status')
+      .select('id, seller_id, platform_owned, kind, title, price_bdt, status')
       .eq('slug', slug)
       .eq('status', 'published')
+      .eq('platform_owned', true)
       .maybeSingle()
+    if (!product) return NextResponse.json({ message: 'This product is no longer available.' }, { status: 404 })
 
-    if (!product) {
-      return NextResponse.json({ message: 'This product is no longer available.' }, { status: 404 })
+    const productLimit = await checkRateLimit('checkout-product', product.id, { max: 200, windowSeconds: 3600, failClosed: true })
+    if (!productLimit.allowed) {
+      return NextResponse.json({ message: 'This product is receiving too many orders right now. Please try again shortly.' }, { status: 429 })
     }
 
-    // The real backstop: x-forwarded-for can be forged, a product id cannot.
-    // A flood against one product is capped regardless of where it comes from.
-    const byProduct = await checkRateLimit('checkout-product', product.id, {
-      max: 200,
-      windowSeconds: 3600,
-    })
-    if (!byProduct.allowed) {
-      return NextResponse.json(
-        { message: 'This product is receiving too many orders right now. Please try again shortly.' },
-        { status: 429 }
-      )
-    }
-
-    // Price and split are recomputed here from the product row. Nothing about
-    // the money comes from the client, and the DB CHECK constraint asserts the
-    // same equation on the way in.
-    const split = splitPrice(Number(product.price_bdt))
+    const split = platformSplitPrice(Number(product.price_bdt))
     const isFree = split.priceBdt === 0
+    const paymentTargets = isFree ? [] : manualPaymentTargets()
+    if (!isFree && paymentTargets.length === 0) {
+      return NextResponse.json({ message: 'Paid checkout is not available until a verified payment destination is configured.' }, { status: 503 })
+    }
 
+    const access = generateAccessToken()
+    const purchaseEventId = randomUUID().replace(/-/g, '')
     const { data: order, error } = await supabase
       .from('unreal_bs_orders')
       .insert({
@@ -105,54 +75,61 @@ export async function POST(request: Request) {
         buyer_name: buyerName,
         buyer_phone: buyerPhone,
         buyer_email: buyerEmail,
+        access_token: null,
+        access_token_hash: access.hash,
+        purchase_event_id: purchaseEventId,
         price_bdt: split.priceBdt,
         commission_bdt: split.commissionBdt,
-        seller_payout_bdt: split.sellerPayoutBdt,
+        seller_payout_bdt: 0,
         status: 'pending_payment',
+        ...attributionColumns(parsed.data),
       })
-      .select('id, access_token, price_bdt, status')
+      .select('id, price_bdt, status')
       .single()
 
     if (error || !order) {
-      await logError('checkout-create', error, { slug })
+      await logError('checkout-create', error, { slug, requestId: parsed.requestId })
       return NextResponse.json({ message: 'Could not start your order.' }, { status: 502 })
     }
 
-    // A free product has nothing to confirm, so it is marked paid immediately
-    // through the same RPC a paid order uses. The buyer gets access at once
-    // and the seller still gets the contact.
     if (isFree) {
-      const { error: paidError } = await supabase.rpc('unreal_bs_order_mark_paid', {
+      const { error: paidError } = await supabase.rpc('unreal_bs_order_mark_paid_v2', {
         p_order_id: order.id,
         p_method: 'free',
         p_reference: null,
-        p_note: null,
+        p_reason: 'Automatic access for free platform product',
+        p_operator_email_hash: 'system',
+        p_idempotency_key: `free:${order.id}`,
+        p_expected_status: 'pending_payment',
       })
       if (paidError) {
         await logError('checkout-free-mark-paid', paidError, { orderId: order.id })
-      } else {
-        await syncOrderToGhl(order.id)
+        return NextResponse.json({ message: 'Could not activate free access. Please try again.' }, { status: 502 })
       }
+      await syncOrderToGhl(order.id)
     }
 
-    return NextResponse.json(
-      {
-        order: {
-          accessToken: order.access_token,
-          priceBdt: split.priceBdt,
-          status: isFree ? 'paid' : 'pending_payment',
-        },
-        // The checkout page tells the buyer the truth about how they are
-        // paying rather than implying a card form exists.
-        payment: {
-          manual: !isGatewayConfigured(),
-          targets: isFree ? [] : manualPaymentTargets(),
-        },
-      },
-      { status: 201 }
-    )
+    if (parsed.data.eventId) {
+      await sendMetaEvent({
+        eventName: 'InitiateCheckout',
+        eventId: parsed.data.eventId,
+        eventSourceUrl: parsed.data.landingPage || new URL(request.url).origin + `/p/${encodeURIComponent(slug)}`,
+        attribution: parsed.data,
+        email: buyerEmail,
+        phone: buyerPhone,
+        clientIp: ip,
+        userAgent: request.headers.get('user-agent'),
+        valueBdt: split.priceBdt,
+        orderId: order.id,
+      })
+    }
+
+    return NextResponse.json({
+      order: { accessToken: access.raw, priceBdt: split.priceBdt, status: isFree ? 'paid' : 'pending_payment' },
+      payment: { manual: !isGatewayConfigured(), targets: paymentTargets },
+    }, { status: 201, headers: { 'x-request-id': parsed.requestId, 'cache-control': 'no-store' } })
   } catch (err) {
-    await logError('checkout-create', err, { slug })
+    await logError('checkout-create', err, { slug, requestId: parsed.requestId })
     return NextResponse.json({ message: 'Could not start your order.' }, { status: 502 })
   }
 }

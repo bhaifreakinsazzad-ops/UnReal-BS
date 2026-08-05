@@ -74,7 +74,8 @@ export class MetaNotConfiguredError extends Error {
  *  managed fulfilment rather than reporting a failure to the user — from the
  *  customer's point of view nothing has gone wrong, their campaign is simply
  *  being set up by a person instead of by an API call. */
-export async function publishCampaign(_input: MetaPublishInput): Promise<MetaPublishResult> {
+export async function publishCampaign(input: MetaPublishInput): Promise<MetaPublishResult> {
+  void input
   if (!isMetaConfigured()) {
     throw new MetaNotConfiguredError()
   }

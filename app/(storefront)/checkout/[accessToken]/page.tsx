@@ -1,5 +1,7 @@
 import { StorefrontShell } from '@/components/storefront/StorefrontChrome'
 import { CheckoutView } from '@/components/storefront/CheckoutView'
+import { notFound } from 'next/navigation'
+import { storefrontEnabledForRequest } from '@/lib/commerce/flags'
 
 export const dynamic = 'force-dynamic'
 
@@ -15,6 +17,7 @@ export default async function CheckoutPage({
 }: {
   params: Promise<{ accessToken: string }>
 }) {
+  if (!(await storefrontEnabledForRequest())) notFound()
   const { accessToken } = await params
   return (
     <StorefrontShell>

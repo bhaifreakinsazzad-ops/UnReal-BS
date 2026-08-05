@@ -3,6 +3,8 @@ import { getSupabaseAdmin, isSupabaseConfigured } from '@/lib/supabase/client'
 import { checkRateLimit } from '@/lib/rate-limit'
 import { logError } from '@/lib/log-error'
 import { PRODUCT_BUCKET, SIGNED_URL_TTL_SECONDS } from '@/lib/commerce/storage'
+import { hashAccessToken } from '@/lib/commerce/access-token'
+import { storefrontEnabledForRequest } from '@/lib/commerce/flags'
 
 export const dynamic = 'force-dynamic'
 
@@ -14,23 +16,26 @@ export const dynamic = 'force-dynamic'
 // minute. A link forwarded to a group chat is dead before it is useful, and
 // revoking access is simply refunding the order.
 
+const TOKEN = /^[A-Za-z0-9_-]{40,64}$/
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
 export async function GET(
   _request: Request,
   { params }: { params: Promise<{ accessToken: string; assetId: string }> }
 ) {
+  if (!(await storefrontEnabledForRequest())) return new NextResponse(null, { status: 404 })
   const { accessToken, assetId } = await params
-  if (!UUID.test(accessToken) || !UUID.test(assetId)) {
+  if (!TOKEN.test(accessToken) || !UUID.test(assetId)) {
     return NextResponse.json({ message: 'Not found.' }, { status: 404 })
   }
   if (!isSupabaseConfigured()) {
     return NextResponse.json({ message: 'Not available right now.' }, { status: 502 })
   }
 
-  const { allowed } = await checkRateLimit('learn-download', accessToken, {
+  const { allowed } = await checkRateLimit('learn-download', hashAccessToken(accessToken), {
     max: 100,
     windowSeconds: 3600,
+    failClosed: true,
   })
   if (!allowed) {
     return NextResponse.json({ message: 'Too many downloads. Try again later.' }, { status: 429 })
@@ -42,7 +47,7 @@ export async function GET(
     const { data: order } = await supabase
       .from('unreal_bs_orders')
       .select('product_id, status')
-      .eq('access_token', accessToken)
+      .eq('access_token_hash', hashAccessToken(accessToken))
       .maybeSingle()
 
     // Deliberately the same 404 for "no such order" and "not paid" — a probe

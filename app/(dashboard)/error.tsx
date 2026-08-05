@@ -10,7 +10,7 @@ interface Props {
 
 export default function DashboardError({ error, reset }: Props) {
   useEffect(() => {
-    console.error(error)
+    console.error('Dashboard render failed', { digest: error.digest ?? 'unavailable' })
     // lib/log-error.ts is server-only, so the client error boundary reports
     // through a small API route instead of calling it directly.
     fetch('/api/log-error', {

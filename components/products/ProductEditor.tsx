@@ -18,7 +18,7 @@ import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Input, Textarea } from '@/components/ui/input'
 import { useLocale } from '@/lib/i18n/context'
-import { commissionBdt, sellerPayoutBdt, MIN_PRICE_BDT } from '@/lib/commerce/pricing'
+import { MIN_PRICE_BDT } from '@/lib/commerce/pricing'
 import { parseVideoUrl } from '@/lib/commerce/video'
 import { absoluteUrl, productPath } from '@/lib/commerce/links'
 import { KINDS, STATUS_LABEL, bdt } from './ProductsShell'
@@ -509,23 +509,9 @@ export function ProductEditor({ productId }: { productId: string }) {
         </div>
 
         <div className="mt-4 rounded-lg bg-gray-50 border border-gray-200 px-4 py-3 text-sm">
-          {price === 0 ? (
-            <p className="text-gray-600">
-              {isBn
-                ? 'ফ্রি — কোনো কমিশন নেই। ক্রেতার নাম ও নম্বর আপনার কনট্যাক্টে যোগ হবে।'
-                : 'Free — no commission. Buyers still become contacts you can follow up with.'}
-            </p>
-          ) : (
-            <div className="flex flex-wrap items-center gap-x-6 gap-y-1">
-              <span className="text-gray-600">
-                {isBn ? 'প্রতি বিক্রিতে আপনি পাবেন' : 'You receive per sale'}{' '}
-                <strong className="text-[#00A85F]">{bdt(sellerPayoutBdt(price))}</strong>
-              </span>
-              <span className="text-gray-400">
-                {isBn ? 'প্ল্যাটফর্ম ফি' : 'Platform fee'} {bdt(commissionBdt(price))}
-              </span>
-            </div>
-          )}
+          <p className="text-gray-600">
+            {isBn ? 'এটি প্ল্যাটফর্মের নিজস্ব প্রোডাক্ট। কোনো seller payout তৈরি হবে না।' : 'Platform-owned inventory: no seller payout is created.'}
+          </p>
         </div>
       </Card>
 

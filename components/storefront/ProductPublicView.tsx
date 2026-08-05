@@ -1,11 +1,12 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { BookOpen, CheckCircle2, Clock, Download, Loader2, PlayCircle, ShieldCheck } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { useStoreLocale } from './StorefrontChrome'
+import { captureAttribution, createMetaEventId, trackMetaEvent } from '@/lib/meta/client-events'
 
 export interface PublicLesson {
   id: string
@@ -63,6 +64,10 @@ export function ProductPublicView({
   const isFree = product.priceBdt === 0
   const previewLessons = lessons.filter((l) => l.isPreview && l.videoUrl)
 
+  useEffect(() => {
+    trackMetaEvent('ViewContent', { content_ids: [product.slug], content_name: product.title, value: product.priceBdt, currency: 'BDT' })
+  }, [product.priceBdt, product.slug, product.title])
+
   async function buy() {
     if (!form.buyerName.trim() || !form.buyerPhone.trim()) {
       setError(isBn ? 'নাম ও মোবাইল নম্বর দিন।' : 'Enter your name and mobile number.')
@@ -71,6 +76,7 @@ export function ProductPublicView({
     setSubmitting(true)
     setError(null)
     try {
+      const eventId = createMetaEventId()
       const res = await fetch('/api/checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -79,10 +85,13 @@ export function ProductPublicView({
           buyerName: form.buyerName.trim(),
           buyerPhone: form.buyerPhone.trim(),
           buyerEmail: form.buyerEmail.trim() || undefined,
+          ...captureAttribution(),
+          eventId,
         }),
       })
       const json = await res.json().catch(() => ({}))
       if (!res.ok) throw new Error(json?.message ?? 'Could not start your order.')
+      trackMetaEvent('InitiateCheckout', { content_ids: [product.slug], value: product.priceBdt, currency: 'BDT' }, eventId)
 
       // A free product is already paid for by the time this returns, so the
       // buyer goes straight to what they came for.

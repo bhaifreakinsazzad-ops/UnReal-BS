@@ -1,5 +1,7 @@
 import { notFound } from 'next/navigation'
 import { auth } from '@/auth'
+import { isAdminEmail } from '@/lib/security/admin'
+import { commerceEnabledFor } from '@/lib/commerce/flags'
 import { AdminOrdersShell } from '@/components/admin/AdminOrdersShell'
 
 export const metadata = { title: 'Product Orders - UNREAL BS' }
@@ -8,8 +10,7 @@ export const dynamic = 'force-dynamic'
 
 export default async function AdminOrdersPage() {
   const session = await auth()
-  const adminEmail = process.env.ADMIN_EMAIL?.trim().toLowerCase()
-  if (!session?.user?.email || !adminEmail || session.user.email.trim().toLowerCase() !== adminEmail) {
+  if (!isAdminEmail(session?.user?.email) || !commerceEnabledFor(session?.user?.email)) {
     notFound()
   }
 

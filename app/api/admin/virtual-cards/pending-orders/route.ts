@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { auth } from '@/auth'
+import { isAdminEmail } from '@/lib/security/admin'
 import { getSupabaseAdmin, isSupabaseConfigured } from '@/lib/supabase/client'
 import { logError } from '@/lib/log-error'
 
@@ -11,8 +12,7 @@ const DB_NOT_READY_MESSAGE =
 async function requireAdmin() {
   const session = await auth()
   const email = session?.user?.email
-  const adminEmail = process.env.ADMIN_EMAIL?.trim().toLowerCase()
-  if (!email || !adminEmail || email.trim().toLowerCase() !== adminEmail) {
+  if (!isAdminEmail(email)) {
     return { error: NextResponse.json({ message: 'Not found.' }, { status: 404 }) }
   }
   if (!isSupabaseConfigured()) {

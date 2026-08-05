@@ -44,7 +44,7 @@ export interface NavItem {
 
 // Real, live features come first; comingSoon placeholders sit at the very
 // end so they never crowd out something a user can actually use today.
-export const navItems: NavItem[] = [
+const allNavItems: NavItem[] = [
   {
     key: 'dashboard',
     labelBn: 'কন্ট্রোল রুম',
@@ -250,5 +250,10 @@ export const navItems: NavItem[] = [
     comingSoon: true,
   },
 ]
+
+// Marketplace publishing is dormant for the platform-owned launch. Keep the
+// route definition close by for a future controlled re-enable, but never put
+// seller product controls in ordinary-user navigation.
+export const navItems = allNavItems.filter((item) => item.key !== 'products')
 
 export const primaryNavItems = navItems.slice(0, 5)

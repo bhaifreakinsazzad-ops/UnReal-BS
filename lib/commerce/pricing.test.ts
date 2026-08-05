@@ -8,6 +8,7 @@ import {
   commissionBdt,
   commissionPercent,
   isSellablePrice,
+  platformSplitPrice,
   sellerPayoutBdt,
   splitPrice,
 } from './pricing'
@@ -105,6 +106,21 @@ describe('the split always adds up', () => {
       expect(split.commissionBdt).toBe(commissionBdt(price))
       expect(split.sellerPayoutBdt).toBe(sellerPayoutBdt(price))
     }
+  })
+})
+
+describe('platformSplitPrice', () => {
+  it('records the full sale as platform revenue with no seller payout', () => {
+    expect(platformSplitPrice(500)).toEqual({
+      priceBdt: 500,
+      commissionBdt: 500,
+      sellerPayoutBdt: 0,
+    })
+    expect(platformSplitPrice(0)).toEqual({
+      priceBdt: 0,
+      commissionBdt: 0,
+      sellerPayoutBdt: 0,
+    })
   })
 })
 

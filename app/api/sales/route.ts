@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { getSupabaseAdmin } from '@/lib/supabase/client'
 import { logError } from '@/lib/log-error'
 import { dbNotReady, requireSellerId } from '@/lib/commerce/guards'
+import { marketplaceSellersEnabled } from '@/lib/commerce/flags'
 
 export const dynamic = 'force-dynamic'
 
@@ -10,6 +11,9 @@ export const dynamic = 'force-dynamic'
 // being confirmed.
 
 export async function GET() {
+  if (!marketplaceSellersEnabled()) {
+    return NextResponse.json({ message: 'Marketplace seller earnings are disabled for this launch.' }, { status: 403 })
+  }
   const resolved = await requireSellerId()
   if (resolved.error) return resolved.error
   const { userId } = resolved

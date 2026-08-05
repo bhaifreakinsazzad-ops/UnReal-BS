@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { Inter, Hind_Siliguri, Noto_Serif_Bengali, JetBrains_Mono } from "next/font/google";
 import Script from "next/script";
+import { headers } from "next/headers";
+import { MarketingConsent } from "@/components/privacy/MarketingConsent";
 import "./globals.css";
 
 const inter = Inter({
@@ -35,11 +37,12 @@ export const metadata: Metadata = {
   keywords: ["CRM", "business", "Bangladesh", "automation", "AI agents"],
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const nonce = (await headers()).get('x-nonce') ?? undefined;
   return (
     <html
       lang="en"
@@ -47,7 +50,8 @@ export default function RootLayout({
     >
       <body className="h-full antialiased">
         {children}
-        <Script src="https://js.puter.com/v2/" strategy="lazyOnload" />
+        <MarketingConsent />
+        <Script src="https://js.puter.com/v2/" strategy="lazyOnload" nonce={nonce} />
       </body>
     </html>
   );

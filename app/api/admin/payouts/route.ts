@@ -3,6 +3,8 @@ import { z } from 'zod'
 import { getSupabaseAdmin } from '@/lib/supabase/client'
 import { logError } from '@/lib/log-error'
 import { dbNotReady, requireAdmin } from '@/lib/commerce/guards'
+import { marketplaceSellersEnabled } from '@/lib/commerce/flags'
+import { hasFreshStepUp } from '@/lib/security/step-up'
 
 export const dynamic = 'force-dynamic'
 
@@ -18,6 +20,9 @@ const patchSchema = z.object({
 })
 
 export async function GET() {
+  if (!marketplaceSellersEnabled()) {
+    return NextResponse.json({ message: 'Marketplace payouts are disabled for this launch.' }, { status: 403 })
+  }
   const resolved = await requireAdmin()
   if ('error' in resolved) return resolved.error
 
@@ -60,8 +65,14 @@ export async function GET() {
 }
 
 export async function PATCH(request: Request) {
+  if (!marketplaceSellersEnabled()) {
+    return NextResponse.json({ message: 'Marketplace payouts are disabled for this launch.' }, { status: 403 })
+  }
   const resolved = await requireAdmin()
   if ('error' in resolved) return resolved.error
+  if (!hasFreshStepUp(request, resolved.email)) {
+    return NextResponse.json({ message: 'Re-enter your password before this payout operation.', code: 'REVERIFY_REQUIRED' }, { status: 428 })
+  }
 
   let body: unknown
   try {

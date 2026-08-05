@@ -13,6 +13,7 @@ import {
   Wallet,
 } from 'lucide-react'
 import { auth } from '@/auth'
+import { isAdminEmail } from '@/lib/security/admin'
 import { Badge } from '@/components/ui/badge'
 
 export const metadata = { title: 'Admin - UNREAL BS' }
@@ -89,8 +90,7 @@ const TOOLS = [
 
 export default async function AdminHubPage() {
   const session = await auth()
-  const adminEmail = process.env.ADMIN_EMAIL?.trim().toLowerCase()
-  if (!session?.user?.email || !adminEmail || session.user.email.trim().toLowerCase() !== adminEmail) {
+  if (!isAdminEmail(session?.user?.email)) {
     notFound()
   }
 
