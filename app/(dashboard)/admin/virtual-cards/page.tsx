@@ -1,11 +1,11 @@
 import { notFound } from 'next/navigation'
 import { auth } from '@/auth'
+import { isAdminEmail } from '@/lib/security/admin'
 import { AdminVirtualCardsShell } from '@/components/admin/AdminVirtualCardsShell'
 
 export default async function AdminVirtualCardsPage() {
   const session = await auth()
-  const adminEmail = process.env.ADMIN_EMAIL?.trim().toLowerCase()
-  if (!session?.user?.email || !adminEmail || session.user.email.trim().toLowerCase() !== adminEmail) {
+  if (!isAdminEmail(session?.user?.email)) {
     notFound()
   }
 

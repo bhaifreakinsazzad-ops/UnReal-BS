@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { z } from 'zod'
 import { auth } from '@/auth'
+import { isAdminEmail } from '@/lib/security/admin'
 import { getSupabaseAdmin, isSupabaseConfigured } from '@/lib/supabase/client'
 import { logError } from '@/lib/log-error'
 
@@ -34,10 +35,9 @@ const postSchema = z.object({
 async function requireAdmin() {
   const session = await auth()
   const email = session?.user?.email
-  const adminEmail = process.env.ADMIN_EMAIL?.trim().toLowerCase()
   // 404 rather than 403 so the endpoint's existence isn't confirmed to
   // non-admins — same convention as app/api/admin/virtual-cards/*.
-  if (!email || !adminEmail || email.trim().toLowerCase() !== adminEmail) {
+  if (!isAdminEmail(email)) {
     return { error: NextResponse.json({ message: 'Not found.' }, { status: 404 }) }
   }
   if (!isSupabaseConfigured()) {

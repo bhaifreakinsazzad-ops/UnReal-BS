@@ -1,92 +1,88 @@
-# UnReal BS - Business Systems
+# UnReal BS — Business Systems
 
-English-first AI business dashboard for GoHighLevel (GHL) sub-accounts: conversations, contacts, funnels/sites, workflows, social posting, a membership area, a lightweight credit ledger, and embedded AI assistants. Bangla remains available through the in-app language toggle.
+UnReal BS is a production Next.js business portal for Bangladeshi businesses. It combines a public eligibility funnel, GoHighLevel-backed CRM workflows, account-scoped business tools, AI services, virtual-card operations, advertising operations, and feature-gated platform commerce.
 
-## UNREAL BS Founding Pilot
+## Public and protected routes
 
-This release is a founding-client pilot for **UNREAL BS - Lead-Ready Business Portal + Opportunity Credit**. It is designed to support ads, eligibility capture, a product demo, and manual onboarding for the first founding clients.
+Public conversion routes:
 
-Public routes:
+- `/unreal-bs` — primary campaign journey
+- `/apply` — Turnstile-protected eligibility application
+- `/privacy` and `/terms` — public policies
 
-- `/unreal-bs` - campaign landing page
-- `/apply` - eligibility application
+Protected product routes include the dashboard, opportunities, credit center, conversations, contacts, workflows, sites, AI tools, payments, and operator administration.
 
-Protected product routes:
+Platform storefront routes (`/p`, `/shop`, `/checkout`, and `/learn`) return `404` until their server-controlled flags are deliberately enabled.
 
-- `/` - Control Room
-- `/opportunities` - Hoooplaaa Opportunity Feed
-- `/credit-center` - Opportunity Credit Center
-- `/services` - NRE Service Marketplace
-- `/conversations` - Inbox
-- `/contacts` - Customers
-- `/workflows` - Sales Pipeline
-- `/sites` - Sites & Funnels
+## Platform commerce
 
-This release is intentionally not a full multi-tenant SaaS. Full role management, automated opportunity marketplace, automated billing provider integration, database-backed audit logs, and automated weekly invoices are Phase 2.
+The launch model is platform-owned products only. Ordinary workspace users cannot publish products or request payouts. Marketplace tables remain dormant for a future release, but launch sales record the full price as platform revenue and zero seller payout.
+
+Supported product kinds are courses, private downloads, services, and consultations. A buyer transfers to a validated platform bKash, Nagad, or Rocket number and submits a transaction reference. Paid orders remain in `verification_submitted` until an operator re-enters their password and confirms the transfer. Free products receive immediate paid access.
+
+Confirmation, rejection, refund, product publication, card reveal, and card assignment are protected with centralized authorization, throttling, audit records, expected-state checks, and idempotency where money or inventory changes. Buyer access tokens are shown once; only SHA-256 hashes are stored. Private files use short-lived signed download URLs and a strict upload allowlist.
+
+## Marketing measurement
+
+Meta Pixel does not load until the visitor grants marketing consent. Browser and Conversions API events share event IDs for deduplication. `Purchase` is emitted only after operator-confirmed payment. The server hashes normalized email and phone values and never exposes the CAPI token to browser code. Consent can be withdrawn from the persistent privacy control.
 
 ## Stack
 
-- Next.js 16 (Turbopack). This version has file-convention changes versus older Next.js versions, including `proxy.ts` instead of `middleware.ts`; read `node_modules/next/dist/docs/` before changing routing or auth-adjacent files.
-- React 19, Tailwind CSS 4
-- NextAuth v5 with Credentials provider, single admin account, and JWT sessions
-- GoHighLevel private integration API in `lib/ghl/*`; no database, GHL is the system of record
-- Puter.js-backed AI surfaces where the browser runtime is available
+- Node.js 24.18.x and npm 11.16.0
+- Next.js 16.3.0, React 19, and Tailwind CSS 4
+- NextAuth v5 Credentials sessions with an eight-hour absolute lifetime
+- Supabase/Postgres with RLS, additive migrations, audit records, and server-only service-role access
+- GoHighLevel private integration APIs
+- Vitest and Playwright release gates
+- Vercel production hosting
 
-## Getting Started
+Next.js 16 uses `proxy.ts` rather than `middleware.ts`. Read the installed framework guides in `node_modules/next/dist/docs/` before changing routing, cookies, CSP, or authentication boundaries.
+
+## Local setup
 
 ```bash
-npm install
-cp .env.example .env.local
+npm ci
+copy .env.example .env.local
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000). Unauthenticated visitors are redirected to `/login`.
+Open `http://localhost:3000`. Protected routes redirect unauthenticated users to `/login`.
 
-## Environment Variables
+## Commands
 
-See [.env.example](.env.example) for the full list. Summary:
+```bash
+npm run lint
+npm run typecheck
+npm test
+npm run build
+npx playwright install chromium
+npm run test:e2e
+```
 
-| Variable | Required | Purpose |
-|---|---|---|
-| `ADMIN_EMAIL` / `ADMIN_PASSWORD` | Yes | The single admin login this app accepts. Login is rejected if either is unset; there is no fallback account. |
-| `AUTH_SECRET` | Yes in production | Signs NextAuth session JWTs. Generate with `npx auth secret`. |
-| `NEXTAUTH_URL` | Usually no | Only needed if your host cannot infer the canonical URL; `trustHost: true` is set in `auth.ts`. |
-| `GHL_PRIVATE_TOKEN` | Yes | GoHighLevel Private Integration token. |
-| `GHL_LOCATION_ID` | Yes | The GHL sub-account location this app reads and writes. |
-| `NEXT_PUBLIC_UNREAL_BS_PUBLIC_URL` | No | Public campaign route, defaults to `/unreal-bs`. |
-| `HOOOPLAAA_OPPORTUNITY_SOURCE` | No | MVP opportunity source. Use `seed` for founding-pilot demo mode. |
-| `HOOOPLAAA_STARTER_CREDIT_LIMIT` | No | Starter opportunity-credit limit, defaults to `5000`. |
-| `UNREAL_BS_FOUNDING_ACTIVATION_BDT` | No | Founding activation price, defaults to `4999`. |
-| `UNREAL_BS_MONTHLY_MEMBERSHIP_BDT` | No | Founding monthly membership price, defaults to `6999`. |
+## Important environment variables
 
-## Scripts
+See `.env.example` for the complete list. Secrets must remain server-only.
 
-- `npm run dev` - dev server
-- `npm run build` - production build
-- `npm run start` - run the production build
-- `npm run lint` - ESLint
+| Group | Variables |
+|---|---|
+| Authentication | `AUTH_SECRET`, `ADMIN_EMAIL`, `ADMIN_PASSWORD` |
+| Supabase | `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` |
+| GoHighLevel | `GHL_PRIVATE_TOKEN`, `GHL_LOCATION_ID` |
+| Commerce flags | `COMMERCE_ENABLED`, `STORE_PUBLIC_ENABLED`, `MARKETPLACE_SELLERS_ENABLED`, `COMMERCE_CANARY_EMAILS` |
+| Payment destinations | `PLATFORM_BKASH_NUMBER`, `PLATFORM_NAGAD_NUMBER`, `PLATFORM_ROCKET_NUMBER` |
+| Meta | `NEXT_PUBLIC_META_PIXEL_ID`, `META_CAPI_ACCESS_TOKEN`, `META_GRAPH_API_VERSION`, `META_CONSENT_VERSION` |
+| Turnstile | `TURNSTILE_ENABLED`, `NEXT_PUBLIC_TURNSTILE_SITE_KEY`, `TURNSTILE_SECRET_KEY` |
+| CSP | `CSP_ENFORCE` |
 
-## Architecture Notes
+## Release policy
 
-- Route groups: `app/(auth)` contains login; `app/(dashboard)` contains authenticated product routes.
-- `proxy.ts` wraps every request in NextAuth `auth()` and redirects unauthenticated requests to `/login`. Treat changes to it as security-sensitive.
-- `app/api/ghl/[...path]/route.ts` is the authenticated passthrough to the GHL REST API using server-side `GHL_PRIVATE_TOKEN`; client code must not call GHL directly.
-- `app/api/ghl/[...path]/route.ts` is allowlisted for the product routes this MVP uses; random passthrough paths should return `403`.
-- `app/api/applications/route.ts` is the public eligibility capture endpoint. It validates form data, upserts the GHL contact, and applies additive applicant tags.
-- `lib/ghl/*` holds typed `server-only` wrappers for contacts, conversations, sites/funnels, workflows, and related GHL resources.
-- `lib/unreal/*` holds founding-pilot seed data for demo opportunities and starter service packs.
-- `lib/i18n/*` holds `en` and `bn` dictionaries plus a `LocaleProvider`/`useLocale()` context. English is the default locale; Bangla persists via `localStorage` key `unrealbs-locale`.
-- Modules live under `app/(dashboard)/<module>/page.tsx` plus `components/<module>/*Shell.tsx`.
+Production releases use `npm ci`, green CI, preview review, and the manual exact-SHA deployment workflow. Commerce stays dark until production backup and reconciliation evidence exists. Database changes are additive and are never destructively reversed; rollback uses flags and Vercel rollback first, followed by a forward database fix if required.
 
-## Known Limitations
+Read `PRE_AD_LAUNCH_RUNBOOK.md`, `IMPLEMENTATION_STATUS.md`, `QA_REPORT.md`, and `ARCHITECTURE.md` before enabling commerce or advertising.
 
-- Single hardcoded admin account; no user management or roles.
-- No automated test suite exists yet.
-- No CI config exists yet; run `npm run lint` and `npm run build` manually before deployment.
-- `app/(dashboard)/error.tsx` logs caught errors to the console only; add production error tracking before relying on it for incident response.
-- Some legacy modules still include Bangla-specific business examples, but the core shell, login, and dashboard are English-first with a Bangla toggle.
-- Opportunities and Credit Center currently use clearly marked seed/demo state for founding sales calls; live marketplace matching, automated settlement, and audit persistence are Phase 2.
+## Known launch boundaries
 
-## Deploying
-
-Deploy anywhere Next.js runs. Vercel is the simplest path for `next build` and NextAuth proxy support. Configure all required variables from `.env.example` in the host before first production use; the app can build without them, but auth and GHL-backed pages will fail at runtime if they are missing.
+- MFA is deferred; ten-minute password re-verification protects sensitive actions.
+- Marketplace sellers and payouts must remain disabled for this launch.
+- A validated payment destination, production migration, controlled payment/refund canary, Meta Test Events proof, completed external security scan, and 24-hour soak are required before advertising.
+- Missing business credentials block feature activation, not local builds.

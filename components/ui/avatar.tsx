@@ -27,6 +27,7 @@ export function Avatar({ name, src, size = 'md', className, online }: AvatarProp
   return (
     <div className={cn('relative flex-shrink-0', className)}>
       {src ? (
+        // eslint-disable-next-line @next/next/no-img-element -- arbitrary CRM avatar origins are intentionally passed through unchanged.
         <img
           src={src}
           alt={name ?? 'Avatar'}

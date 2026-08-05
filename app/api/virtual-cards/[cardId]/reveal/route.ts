@@ -4,6 +4,10 @@ import { getSupabaseAdmin, isSupabaseConfigured } from '@/lib/supabase/client'
 import { resolveUserIdByEmail } from '@/lib/supabase/user'
 import { decryptCardCredential } from '@/lib/crypto/card-credentials'
 import { logError } from '@/lib/log-error'
+import { checkRateLimit } from '@/lib/rate-limit'
+import { recordAuditEvent } from '@/lib/security/audit'
+import { opaqueRateKey } from '@/lib/security/request'
+import { hasFreshStepUp } from '@/lib/security/step-up'
 
 export const dynamic = 'force-dynamic'
 
@@ -24,7 +28,7 @@ async function requireUserId() {
     if (!userId) {
       return { error: NextResponse.json({ message: DB_NOT_READY_MESSAGE }, { status: 502 }) }
     }
-    return { userId }
+    return { userId, email: email.trim().toLowerCase() }
   } catch {
     return { error: NextResponse.json({ message: DB_NOT_READY_MESSAGE }, { status: 502 }) }
   }
@@ -43,11 +47,17 @@ async function requireUserId() {
 // a rotated key — or a customer whose mobile connection dropped before the
 // response arrived — permanently destroyed a card they had already paid for,
 // with no way to recover or re-send it.
-export async function GET(_request: Request, { params }: { params: Promise<{ cardId: string }> }) {
+export async function POST(request: Request, { params }: { params: Promise<{ cardId: string }> }) {
   const resolved = await requireUserId()
   if (resolved.error) return resolved.error
-  const { userId } = resolved
+  const { userId, email } = resolved
   const { cardId } = await params
+
+  if (!hasFreshStepUp(request, email)) {
+    return NextResponse.json({ message: 'Re-enter your password before revealing card credentials.', code: 'REVERIFY_REQUIRED' }, { status: 428 })
+  }
+  const limit = await checkRateLimit('card-reveal', opaqueRateKey(`${userId}:${cardId}`), { max: 5, windowSeconds: 3600, failClosed: true })
+  if (!limit.allowed) return NextResponse.json({ message: 'Too many reveal attempts. Try again later.' }, { status: 429 })
 
   try {
     const supabase = getSupabaseAdmin()
@@ -109,7 +119,8 @@ export async function GET(_request: Request, { params }: { params: Promise<{ car
       )
     }
 
-    return NextResponse.json({ credential: plaintext })
+    await recordAuditEvent({ eventType: 'virtual_card.reveal', actorEmail: email, actorUserId: userId, targetType: 'virtual_card', targetId: cardId })
+    return NextResponse.json({ credential: plaintext }, { headers: { 'cache-control': 'no-store, private' } })
   } catch (err) {
     await logError('virtual-cards-reveal-route-get', err, { userId, cardId })
     return NextResponse.json({ message: DB_NOT_READY_MESSAGE }, { status: 502 })

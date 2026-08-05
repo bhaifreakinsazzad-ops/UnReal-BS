@@ -1,7 +1,19 @@
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { ArrowRight, Banknote, CreditCard, Megaphone, Package, Sparkles, Users } from 'lucide-react'
+import {
+  ArrowRight,
+  Banknote,
+  CreditCard,
+  Megaphone,
+  Package,
+  ShoppingBag,
+  Sparkles,
+  Store,
+  Users,
+  Wallet,
+} from 'lucide-react'
 import { auth } from '@/auth'
+import { isAdminEmail } from '@/lib/security/admin'
 import { Badge } from '@/components/ui/badge'
 
 export const metadata = { title: 'Admin - UNREAL BS' }
@@ -53,12 +65,32 @@ const TOOLS = [
     icon: Megaphone,
     tone: 'bg-[#E0F2FE] text-[#0369A1]',
   },
+  {
+    href: '/admin/orders',
+    title: 'Product Orders',
+    desc: 'Buyers who say they have paid for a digital product. Match the TrxID against the bKash statement, then confirm — that is what credits the seller.',
+    icon: ShoppingBag,
+    tone: 'bg-[#E8FFF4] text-[#059669]',
+  },
+  {
+    href: '/admin/products',
+    title: 'Published Products',
+    desc: 'Everything sellers have put on sale. Products publish without approval — this is where you take one down if it breaks a rule.',
+    icon: Store,
+    tone: 'bg-[#F3E8FF] text-[#7E22CE]',
+  },
+  {
+    href: '/admin/payouts',
+    title: 'Seller Payouts',
+    desc: 'Sellers withdrawing what they earned. The money is already held out of their wallet — mark it paid once you have sent it.',
+    icon: Wallet,
+    tone: 'bg-[#FFF1E6] text-[#C2410C]',
+  },
 ]
 
 export default async function AdminHubPage() {
   const session = await auth()
-  const adminEmail = process.env.ADMIN_EMAIL?.trim().toLowerCase()
-  if (!session?.user?.email || !adminEmail || session.user.email.trim().toLowerCase() !== adminEmail) {
+  if (!isAdminEmail(session?.user?.email)) {
     notFound()
   }
 
