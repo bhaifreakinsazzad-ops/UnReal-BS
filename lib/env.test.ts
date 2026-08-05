@@ -17,6 +17,7 @@ describe('Meta environment validation', () => {
 
   it('rejects a CAPI token without its destination Pixel ID', () => {
     delete process.env.NEXT_PUBLIC_META_PIXEL_ID
+    delete process.env.META_DATASET_ID
     process.env.META_CAPI_ACCESS_TOKEN = 'server-secret'
 
     expect(validateServerEnvironment().issueCodes).toContain('meta_incomplete')
