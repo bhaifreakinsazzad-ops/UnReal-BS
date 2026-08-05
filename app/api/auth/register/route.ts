@@ -116,6 +116,7 @@ export async function POST(request: Request) {
         eventSourceUrl,
         attribution,
         email: created.email,
+        externalId: created.id,
         clientIp: requestIp,
         userAgent,
       }))

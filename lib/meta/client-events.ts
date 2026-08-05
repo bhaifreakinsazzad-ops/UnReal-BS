@@ -25,19 +25,37 @@ export function hasMarketingConsent(): boolean {
   }
 }
 
+function firstPartyCookie(name: '_fbc' | '_fbp'): string | null {
+  if (typeof document === 'undefined') return null
+  const prefix = `${name}=`
+  const value = document.cookie
+    .split(';')
+    .map((part) => part.trim())
+    .find((part) => part.startsWith(prefix))
+    ?.slice(prefix.length)
+  return value ? decodeURIComponent(value).slice(0, 500) : null
+}
+
 export function captureAttribution(): Attribution {
   if (typeof window === 'undefined') return { marketingConsent: false }
   const params = new URLSearchParams(window.location.search)
+  const marketingConsent = hasMarketingConsent()
+  const fbclid = params.get('fbclid')?.slice(0, 500) || null
   const fresh: Attribution = {
     utmSource: params.get('utm_source')?.slice(0, 100) || null,
     utmMedium: params.get('utm_medium')?.slice(0, 100) || null,
     utmCampaign: params.get('utm_campaign')?.slice(0, 150) || null,
     utmContent: params.get('utm_content')?.slice(0, 150) || null,
     utmTerm: params.get('utm_term')?.slice(0, 150) || null,
-    fbclid: params.get('fbclid')?.slice(0, 500) || null,
+    fbclid,
+    // Meta creates these first-party identifiers only after the visitor has
+    // granted marketing consent. Supplying them to CAPI materially improves
+    // event matching without adding more personal form fields.
+    fbc: marketingConsent ? firstPartyCookie('_fbc') : null,
+    fbp: marketingConsent ? firstPartyCookie('_fbp') : null,
     landingPage: window.location.href.slice(0, 1000),
     referrer: document.referrer.slice(0, 1000) || null,
-    marketingConsent: hasMarketingConsent(),
+    marketingConsent,
     consentVersion: currentConsentVersion(),
   }
   try {
@@ -50,6 +68,8 @@ export function captureAttribution(): Attribution {
       utmContent: fresh.utmContent || previous.utmContent || null,
       utmTerm: fresh.utmTerm || previous.utmTerm || null,
       fbclid: fresh.fbclid || previous.fbclid || null,
+      fbc: fresh.fbc || previous.fbc || null,
+      fbp: fresh.fbp || previous.fbp || null,
       landingPage: previous.landingPage || fresh.landingPage,
       referrer: previous.referrer || fresh.referrer || null,
     }

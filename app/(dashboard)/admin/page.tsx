@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation'
 import {
   ArrowRight,
   Banknote,
+  DatabaseZap,
   CreditCard,
   Megaphone,
   Package,
@@ -23,6 +24,13 @@ export const dynamic = 'force-dynamic'
 // Admin hub. These screens existed but were unreachable from anywhere in the
 // UI — the operator had to type the URLs by hand.
 const TOOLS = [
+  {
+    href: '/admin/meta',
+    title: 'Meta Pixel & Dataset',
+    desc: 'Validate the server-side dataset connection with a synthetic Test Event before using it for advertising.',
+    icon: DatabaseZap,
+    tone: 'bg-violet-50 text-violet-700',
+  },
   {
     href: '/admin/deposit-requests',
     title: 'Deposit Approvals',
