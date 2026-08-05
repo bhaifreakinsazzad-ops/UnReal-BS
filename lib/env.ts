@@ -20,7 +20,9 @@ const serverEnvironmentSchema = z.object({
   PLATFORM_NAGAD_NUMBER: optionalText,
   PLATFORM_ROCKET_NUMBER: optionalText,
   NEXT_PUBLIC_META_PIXEL_ID: optionalText,
+  META_DATASET_ID: optionalText,
   META_CAPI_ACCESS_TOKEN: optionalText,
+  META_TEST_EVENT_CODE: optionalText,
   NEXT_PUBLIC_TURNSTILE_SITE_KEY: optionalText,
   TURNSTILE_SECRET_KEY: optionalText,
   NEXT_PUBLIC_CONSENT_VERSION: optionalText,
@@ -96,7 +98,9 @@ export function environmentReadiness() {
   }
   const meta = {
     pixel: present('NEXT_PUBLIC_META_PIXEL_ID'),
-    capi: present('META_CAPI_ACCESS_TOKEN'),
+    dataset: present('META_DATASET_ID') || present('NEXT_PUBLIC_META_PIXEL_ID'),
+    capi: present('META_CAPI_ACCESS_TOKEN') && (present('META_DATASET_ID') || present('NEXT_PUBLIC_META_PIXEL_ID')),
+    testEvents: present('META_TEST_EVENT_CODE'),
   }
   const turnstile = {
     siteKey: present('NEXT_PUBLIC_TURNSTILE_SITE_KEY'),

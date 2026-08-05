@@ -9,6 +9,8 @@ export const attributionSchema = z.object({
   utmContent: bounded(150),
   utmTerm: bounded(150),
   fbclid: bounded(500),
+  fbc: bounded(500),
+  fbp: bounded(500),
   landingPage: bounded(1000),
   referrer: bounded(1000),
   eventId: z.string().trim().min(8).max(100).regex(/^[A-Za-z0-9_-]+$/).optional().nullable(),

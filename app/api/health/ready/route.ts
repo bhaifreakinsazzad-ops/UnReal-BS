@@ -31,6 +31,7 @@ export async function GET() {
         marketplaceSellers: environment.flags.marketplaceSellers,
         metaPixel: environment.meta.pixel,
         metaCapi: environment.meta.capi,
+        metaTestEvents: environment.meta.capi && environment.meta.testEvents,
         turnstile: environment.flags.turnstile && environment.turnstile.siteKey && environment.turnstile.secret,
         cspEnforced: environment.flags.cspEnforced,
       },
