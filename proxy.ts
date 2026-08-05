@@ -8,7 +8,22 @@ export default auth((req) => {
     pathname
   )
 
+  // The storefront is public by design: a buyer arrives from a Facebook or
+  // WhatsApp link with no account and must be able to see the product, pay for
+  // it, and open what they bought. Every one of these routes authorises on its
+  // own — a product page only serves `status = 'published'`, and everything
+  // under /learn and /checkout is keyed on an unguessable per-order token that
+  // the route re-checks against a PAID order on every request.
+  const isStorefront =
+    pathname.startsWith('/p/') ||
+    pathname.startsWith('/shop/') ||
+    pathname.startsWith('/checkout/') ||
+    pathname.startsWith('/learn/') ||
+    pathname.startsWith('/api/checkout') ||
+    pathname.startsWith('/api/learn')
+
   const isPublic =
+    isStorefront ||
     pathname.startsWith('/login') ||
     pathname.startsWith('/signup') ||
     pathname.startsWith('/unreal-bs') ||

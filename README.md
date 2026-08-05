@@ -24,6 +24,58 @@ Protected product routes:
 
 This release is intentionally not a full multi-tenant SaaS. Full role management, automated opportunity marketplace, automated billing provider integration, database-backed audit logs, and automated weekly invoices are Phase 2.
 
+## Digital Products & Courses
+
+Sellers build and sell digital products — online courses, downloadable files,
+fixed-price services and paid consultations — from `/products`. One engine
+serves all four; `kind` is the only thing that differs, so checkout,
+commission, refunds and the buyer's access page are written once.
+
+Public storefront routes (no account required):
+
+- `/p/<slug>` — a product page, server-rendered so Facebook and WhatsApp build
+  a real link preview
+- `/shop/<handle>` — everything one seller has published, for a page bio
+- `/checkout/<accessToken>` — payment instructions and the TrxID form
+- `/learn/<accessToken>` — the course player and download links
+
+**Money.** The buyer pays the platform's bKash/Nagad number, an operator
+matches the TrxID in `/admin/orders`, and confirming credits the seller's
+wallet with the sale minus a 10% commission (floor ৳10, cap ৳2,000, minimum
+paid price ৳50; free products are supported and take no commission). The split
+is computed in `lib/commerce/pricing.ts`, which the seller's editor and the
+checkout route both import, and `unreal_bs_orders` carries a CHECK constraint
+asserting `commission + payout = price` on every row. Sellers withdraw through
+`/sales`; the wallet is debited when the request is made, not when it is paid,
+so the balance cannot be spent twice.
+
+**Payments are manual today.** There is no gateway — SSLCommerz and aamarPay
+both need a trade licence, a company bank account and a paid setup before the
+first taka moves. `lib/commerce/payment-provider.ts` defines the interface one
+will implement, `orders` already carries `gateway_provider`/`gateway_ref`, and
+the checkout page branches on `isGatewayConfigured()` so it tells the buyer the
+truth about how they are paying.
+
+**Video is embedded, not hosted.** Only YouTube and Vimeo links are accepted,
+and they are parsed rather than trusted — the URL ends up in an `<iframe src>`.
+See `lib/commerce/video.ts`.
+
+**Downloads** live in a private Supabase Storage bucket (`product-files`).
+Every download re-checks that the order is paid and then issues a 60-second
+signed URL; the storage path never leaves the server.
+
+**What GoHighLevel does here.** GHL's public API *cannot create courses* — its
+Memberships API is a single bulk-import endpoint with no CRUD, so a course
+built through it could never be edited or deleted afterwards. The course engine
+is therefore ours. GHL is used for the part its API does well: on every paid
+order the buyer is upserted as a contact in the *seller's own* sub-account and
+tagged (`unrealbs-buyer`, `kind-<kind>`, `bought-<product>`), so the seller's
+existing follow-up workflows fire. This never blocks a sale — a seller with no
+connected workspace sells exactly the same.
+
+Operator screens: `/admin/orders`, `/admin/products` (take-down, not approval —
+products publish without review), `/admin/payouts`.
+
 ## Stack
 
 - Next.js 16 (Turbopack). This version has file-convention changes versus older Next.js versions, including `proxy.ts` instead of `middleware.ts`; read `node_modules/next/dist/docs/` before changing routing or auth-adjacent files.

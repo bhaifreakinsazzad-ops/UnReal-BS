@@ -24,6 +24,7 @@ import {
   Landmark,
   Megaphone,
   Store,
+  GraduationCap,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 
@@ -66,6 +67,15 @@ export const navItems: NavItem[] = [
     labelEn: 'Wallet',
     href: '/payments',
     icon: Wallet,
+    badge: 'NEW',
+    group: 'workspace',
+  },
+  {
+    key: 'products',
+    labelBn: 'ডিজিটাল প্রোডাক্ট',
+    labelEn: 'Digital Products',
+    href: '/products',
+    icon: GraduationCap,
     badge: 'NEW',
     group: 'workspace',
   },
