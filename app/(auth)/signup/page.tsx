@@ -6,6 +6,7 @@ import Link from 'next/link'
 import { signIn } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { CheckCircle2, Loader2, Sparkles } from 'lucide-react'
+import { captureAttribution, createMetaEventId, trackMetaEvent } from '@/lib/meta/client-events'
 
 // Public self-registration. A new account gets its own wallet and its own
 // per-user ledgers immediately; the CRM screens show an honest
@@ -29,11 +30,13 @@ export default function SignupPage() {
     }
 
     setLoading(true)
+    const eventId = createMetaEventId()
+    const attribution = { ...captureAttribution(), eventId }
     try {
       const res = await fetch('/api/auth/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password, businessName }),
+        body: JSON.stringify({ email, password, businessName, ...attribution }),
       })
       const json = await res.json().catch(() => ({}))
 
@@ -42,6 +45,10 @@ export default function SignupPage() {
         setLoading(false)
         return
       }
+
+      // Fire only after the account exists. The server uses the same event ID
+      // for Conversions API, so Meta can deduplicate browser/server delivery.
+      trackMetaEvent('CompleteRegistration', { content_name: 'Free Account' }, eventId)
 
       // Sign straight in so the user lands inside the product, not back at a form.
       const signInRes = await signIn('credentials', { email, password, redirect: false })

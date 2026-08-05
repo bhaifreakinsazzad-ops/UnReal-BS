@@ -76,7 +76,10 @@ export function validateServerEnvironment(): { valid: boolean; issueCodes: Envir
   if (serverFlags.turnstileEnabled() && (!present('NEXT_PUBLIC_TURNSTILE_SITE_KEY') || !present('TURNSTILE_SECRET_KEY'))) {
     issueCodes.add('turnstile_incomplete')
   }
-  if (present('NEXT_PUBLIC_META_PIXEL_ID') !== present('META_CAPI_ACCESS_TOKEN')) issueCodes.add('meta_incomplete')
+  // Browser Pixel is a valid consent-gated baseline. CAPI is an optional
+  // server-side enhancement, but it can never be configured without a Pixel
+  // ID because Meta needs that ID as the event destination.
+  if (present('META_CAPI_ACCESS_TOKEN') && !present('NEXT_PUBLIC_META_PIXEL_ID')) issueCodes.add('meta_incomplete')
 
   return { valid: issueCodes.size === 0, issueCodes: [...issueCodes] }
 }

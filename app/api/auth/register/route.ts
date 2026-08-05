@@ -1,10 +1,12 @@
-import { NextResponse } from 'next/server'
+import { after, NextResponse } from 'next/server'
 import { z } from 'zod'
 import bcrypt from 'bcryptjs'
 import { getSupabaseAdmin, isSupabaseConfigured } from '@/lib/supabase/client'
 import { checkRateLimit } from '@/lib/rate-limit'
 import { logError } from '@/lib/log-error'
 import { clientIp, opaqueRateKey, readJson } from '@/lib/security/request'
+import { attributionSchema } from '@/lib/meta/attribution'
+import { sendMetaEvent } from '@/lib/meta/capi'
 
 export const dynamic = 'force-dynamic'
 
@@ -18,7 +20,7 @@ export const dynamic = 'force-dynamic'
 // Subscriptions, Virtual Cards) and sees an honest "workspace being set up"
 // state on the CRM screens, rather than another merchant's contacts.
 
-const registerSchema = z.object({
+const registerSchema = attributionSchema.extend({
   email: z.string().trim().toLowerCase().email().max(200),
   // 10 chars minimum rather than 8: this is the only credential protecting a
   // wallet with real money in it, and there is no MFA yet.
@@ -37,7 +39,7 @@ export async function POST(request: Request) {
   const parsed = await readJson(request, registerSchema, { maxBytes: 8192 })
   if (parsed.error) return parsed.error
 
-  const { email, password, businessName } = parsed.data
+  const { email, password, businessName, ...attribution } = parsed.data
 
   // Fail closed: signup creates real money-holding accounts, so if the limiter
   // itself is broken we would rather refuse than allow bulk registration.
@@ -99,6 +101,24 @@ export async function POST(request: Request) {
     if (walletError && walletError.code !== '23505') {
       // Non-fatal: /api/wallet creates the row on demand if it is missing.
       await logError('auth-register-wallet-init', walletError, { userId: created.id })
+    }
+
+    // Registration is the ad conversion, not the submit click. Send it after
+    // the response so Meta latency/failure never delays or breaks account
+    // creation. Browser and server share eventId for deduplication.
+    if (attribution.marketingConsent && attribution.eventId) {
+      const eventSourceUrl = attribution.landingPage || new URL('/signup', request.url).toString()
+      const requestIp = clientIp(request)
+      const userAgent = request.headers.get('user-agent')
+      after(() => sendMetaEvent({
+        eventName: 'CompleteRegistration',
+        eventId: attribution.eventId!,
+        eventSourceUrl,
+        attribution,
+        email: created.email,
+        clientIp: requestIp,
+        userAgent,
+      }))
     }
 
     return NextResponse.json({ ok: true, email: created.email }, { status: 201 })

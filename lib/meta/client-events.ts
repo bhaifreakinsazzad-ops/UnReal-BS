@@ -64,7 +64,7 @@ export function createMetaEventId(): string {
   return crypto.randomUUID().replace(/-/g, '')
 }
 
-export function trackMetaEvent(name: 'PageView' | 'ViewContent' | 'Lead' | 'InitiateCheckout' | 'Purchase', parameters: Record<string, unknown> = {}, eventId?: string): boolean {
+export function trackMetaEvent(name: 'PageView' | 'ViewContent' | 'Lead' | 'CompleteRegistration' | 'InitiateCheckout' | 'Purchase', parameters: Record<string, unknown> = {}, eventId?: string): boolean {
   if (!hasMarketingConsent() || !window.fbq) return false
   window.fbq('track', name, parameters, eventId ? { eventID: eventId } : undefined)
   return true

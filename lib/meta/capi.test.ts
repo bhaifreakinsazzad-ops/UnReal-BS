@@ -52,4 +52,24 @@ describe('Meta Conversions API delivery', () => {
     expect(bodies[0].data[0].user_data.em[0]).not.toContain('buyer@example.com')
     expect(String(fetchMock.mock.calls[0][0])).toContain('access_token=server-secret')
   })
+
+  it('sends a consented account creation as CompleteRegistration', async () => {
+    const fetchMock = vi.spyOn(globalThis, 'fetch')
+      .mockResolvedValueOnce(new Response('{"events_received":1}', { status: 200 }))
+
+    const sent = await sendMetaEvent({
+      eventName: 'CompleteRegistration',
+      eventId: 'registration_event_123',
+      eventSourceUrl: 'https://unreal-bs.shop/signup',
+      attribution: { marketingConsent: true, consentVersion: '2026-08-05' },
+      email: 'NewUser@Example.com',
+    })
+
+    expect(sent).toBe(true)
+    const body = JSON.parse(String((fetchMock.mock.calls[0][1] as RequestInit).body))
+    expect(body.data[0].event_name).toBe('CompleteRegistration')
+    expect(body.data[0].event_id).toBe('registration_event_123')
+    expect(body.data[0].event_source_url).toBe('https://unreal-bs.shop/signup')
+    expect(body.data[0].user_data.em[0]).not.toContain('newuser@example.com')
+  })
 })

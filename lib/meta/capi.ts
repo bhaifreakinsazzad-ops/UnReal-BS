@@ -3,7 +3,7 @@ import { createHash } from 'node:crypto'
 import { logError } from '@/lib/log-error'
 import type { Attribution } from '@/lib/meta/attribution'
 
-type MetaEventName = 'Lead' | 'InitiateCheckout' | 'Purchase'
+type MetaEventName = 'Lead' | 'CompleteRegistration' | 'InitiateCheckout' | 'Purchase'
 
 function sha256(value: string): string {
   return createHash('sha256').update(value).digest('hex')
