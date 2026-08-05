@@ -1,0 +1,21 @@
+Communication job
+By the end, a non-technical Bangla-speaking reader should understand what every UNREAL BS feature does, how it works, what value it creates, which system powers it, and whether it is live, controlled, dark, read-only, or coming soon.
+
+Narrative
+1. What UNREAL BS is and how the system fits together.
+2. HighLevel-powered customer and operations features.
+3. UNREAL BS custom money, AI, service, and delivery features.
+4. Platform commerce and advertising capabilities.
+5. Security, administration, and operational truth.
+6. Status map and practical knowledge-base usage.
+
+Visual direction
+- 16:9 widescreen, black-charcoal canvas with warm gold, purple, emerald, and cyan accents.
+- Nirmala UI for Bengali readability.
+- Infographic compositions: one large flow or relationship per feature, not dense UI-card mosaics.
+- Plain-language Bengali with English product names where they are already part of the interface.
+- Every slide contains a verified status label and a short source block in speaker notes.
+
+Source truth
+- Current repository routes, components, API handlers, README, ARCHITECTURE, QA_REPORT, and PRE_AD_LAUNCH_RUNBOOK.
+- No invented usage numbers, growth claims, customer outcomes, or production activations.
