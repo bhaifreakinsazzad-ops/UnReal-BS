@@ -66,8 +66,8 @@ export default function PrivacyPage() {
         <section>
           <h2 className="text-lg font-semibold text-[#0D0D1A]">Data for logged-in workspaces</h2>
           <p className="mt-2">
-            If you are provisioned a workspace account, business data you enter (such as Udhar
-            Khata ledger entries) is stored in our database and is only accessible to your
+            If you are provisioned a workspace account, business data you enter is stored in
+            our database and is only accessible to your
             account and the UnReal BS team for support purposes.
           </p>
         </section>

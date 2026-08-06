@@ -7,9 +7,7 @@
     "agentic_hq": "এজেন্টিক HQ",
     "workflows": "ওয়ার্কফ্লো",
     "social_yo": "সোশ্যাল Yo",
-    "clan": "ক্ল্যান",
-    "app_developer": "অ্যাপ ডেভেলপার",
-    "skills": "স্কিলস & কানেকশন"
+    "app_developer": "অ্যাপ ডেভেলপার"
   },
   "common": {
     "search": "খুঁজুন...",
@@ -140,17 +138,6 @@
     "published": "প্রকাশিত",
     "failed": "ব্যর্থ"
   },
-  "clan": {
-    "title": "ক্ল্যান",
-    "members": "মেম্বার",
-    "content": "কন্টেন্ট",
-    "active_members": "সক্রিয় মেম্বার",
-    "new_members": "নতুন মেম্বার",
-    "revenue": "আয়",
-    "popular_content": "জনপ্রিয় কন্টেন্ট",
-    "add_content": "কন্টেন্ট যোগ করুন",
-    "add_section": "সেকশন যোগ"
-  },
   "app_developer": {
     "title": "অ্যাপ ডেভেলপার",
     "new_project": "নতুন প্রজেক্ট",
@@ -158,25 +145,6 @@
     "preview": "প্রিভিউ",
     "ask_ai": "AI কে জিজ্ঞেস করুন...",
     "live": "লাইভ"
-  },
-  "skills": {
-    "title": "স্কিলস & কানেকশন",
-    "browse": "ব্রাউজ করুন",
-    "installed": "ইন্সটলড",
-    "custom": "কাস্টম",
-    "all": "সব",
-    "crm": "CRM",
-    "social_media": "সোশ্যাল মিডিয়া",
-    "payment": "পেমেন্ট",
-    "ai": "AI",
-    "mcp": "MCP",
-    "custom_label": "কাস্টম",
-    "add_mcp": "MCP সার্ভার যোগ করুন",
-    "server_url": "সার্ভার URL",
-    "api_key": "API কী",
-    "test_connection": "সংযোগ পরীক্ষা করুন",
-    "connected": "সংযুক্ত",
-    "disconnected": "বিচ্ছিন্ন"
   },
   "sites": {
     "title": "সাইটস",

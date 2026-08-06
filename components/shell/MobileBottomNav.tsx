@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { LayoutDashboard, MessageSquare, Users, HandCoins, Landmark } from 'lucide-react'
+import { Bot, CreditCard, LayoutDashboard, MessageSquare, Users } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 interface MobileBottomNavProps {
@@ -11,10 +11,10 @@ interface MobileBottomNavProps {
 
 const primaryItems = [
   { href: '/', labelBn: 'Control', labelEn: 'Control', icon: LayoutDashboard },
-  { href: '/udhar-khata', labelBn: 'Khata', labelEn: 'Khata', icon: Landmark },
-  { href: '/opportunities', labelBn: 'Opps', labelEn: 'Opps', icon: HandCoins, comingSoon: true },
+  { href: '/payments', labelBn: 'Wallet', labelEn: 'Wallet', icon: CreditCard },
   { href: '/conversations', labelBn: 'Inbox', labelEn: 'Inbox', icon: MessageSquare },
   { href: '/contacts', labelBn: 'Customers', labelEn: 'Customers', icon: Users },
+  { href: '/ai-agents', labelBn: 'AI', labelEn: 'AI', icon: Bot },
 ]
 
 export function MobileBottomNav({ locale = 'en' }: MobileBottomNavProps) {
@@ -44,11 +44,6 @@ export function MobileBottomNav({ locale = 'en' }: MobileBottomNavProps) {
               <span className="text-[10px] font-medium leading-none">
                 {locale === 'bn' ? item.labelBn : item.labelEn}
               </span>
-              {item.comingSoon && (
-                <span className="text-[8px] font-semibold uppercase tracking-wide text-[#00C875] leading-none">
-                  {locale === 'bn' ? 'শীঘ্রই' : 'Soon'}
-                </span>
-              )}
               {active && (
                 <span className="absolute top-0 left-1/2 -translate-x-1/2 w-6 h-0.5 bg-[#7C3AED] rounded-full" />
               )}

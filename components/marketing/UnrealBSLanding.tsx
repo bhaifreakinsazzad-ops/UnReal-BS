@@ -44,7 +44,7 @@ const steps = [
   'Verify business',
   'Activate portal',
   'Your CRM workspace is connected',
-  'Start with Udhar Khata and AI',
+  'Start with Wallet and AI',
 ]
 
 // Illustrative only — these are example figures shown on the marketing page,
@@ -188,7 +188,7 @@ export function UnrealBSLanding() {
               ['Activation', '৳4,999'],
               ['Monthly', '৳6,999'],
               ['AI packages', 'From ৳699'],
-              ['Udhar Khata & Wallet', 'Included'],
+              ['Wallet & AI tools', 'Included'],
             ].map(([label, value]) => (
               <div key={label} className="rounded-xl bg-[#070B12]/70 p-4">
                 <p className="text-xs uppercase tracking-wide text-white/45">{label}</p>

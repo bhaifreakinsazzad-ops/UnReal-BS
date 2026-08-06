@@ -5,12 +5,9 @@ import {
   Bot,
   Zap,
   Share2,
-  Crown,
   Code2,
-  Plug,
   Globe,
   BrainCircuit,
-  Palette,
   Link2,
   Sparkles,
   Cpu,
@@ -21,7 +18,6 @@ import {
   Wallet,
   MessagesSquare,
   CreditCard,
-  Landmark,
   Megaphone,
   Store,
   GraduationCap,
@@ -51,14 +47,6 @@ const allNavItems: NavItem[] = [
     labelEn: 'Control Room',
     href: '/',
     icon: LayoutDashboard,
-    group: 'workspace',
-  },
-  {
-    key: 'udhar_khata',
-    labelBn: 'উধার খাতা',
-    labelEn: 'Udhar Khata',
-    href: '/udhar-khata',
-    icon: Landmark,
     group: 'workspace',
   },
   {
@@ -161,13 +149,6 @@ const allNavItems: NavItem[] = [
     icon: BrainCircuit,
   },
   {
-    key: 'brand_board',
-    labelBn: 'ব্র্যান্ড বোর্ড',
-    labelEn: 'Brand Board',
-    href: '/brand-board',
-    icon: Palette,
-  },
-  {
     key: 'support',
     labelBn: 'সাপোর্ট',
     labelEn: 'Support',
@@ -205,25 +186,11 @@ const allNavItems: NavItem[] = [
     comingSoon: true,
   },
   {
-    key: 'clan',
-    labelBn: 'ক্ল্যান',
-    labelEn: 'Clan',
-    href: '/clan',
-    icon: Crown,
-  },
-  {
     key: 'app_developer',
     labelBn: 'অ্যাপ ডেভেলপার',
     labelEn: 'App Developer',
     href: '/app-developer',
     icon: Code2,
-  },
-  {
-    key: 'skills',
-    labelBn: 'স্কিলস',
-    labelEn: 'Skills',
-    href: '/skills',
-    icon: Plug,
   },
   {
     key: 'ask_ai',
@@ -251,9 +218,51 @@ const allNavItems: NavItem[] = [
   },
 ]
 
-// Marketplace publishing is dormant for the platform-owned launch. Keep the
-// route definition close by for a future controlled re-enable, but never put
-// seller product controls in ordinary-user navigation.
-export const navItems = allNavItems.filter((item) => item.key !== 'products')
+const hiddenNavKeys = new Set(['products'])
+
+const navOrder = [
+  'dashboard',
+  'wallet',
+  'ads',
+  'conversations',
+  'contacts',
+  'workflows',
+  'ai_subscriptions',
+  'virtual_cards',
+  'services',
+  'sites',
+  'ai_agents',
+  'agent_studio',
+  'support',
+  'integrations',
+  'social_market',
+  'agentic_hq',
+  'app_developer',
+  'ask_ai',
+  'meetally',
+  'opportunities',
+  'credit_center',
+]
+
+const navGroups: Record<string, NavItem['group']> = {
+  dashboard: 'workspace',
+  wallet: 'workspace',
+  ads: 'workspace',
+  conversations: 'workspace',
+  contacts: 'workspace',
+  workflows: 'workspace',
+  ai_subscriptions: 'money-ai',
+  virtual_cards: 'money-ai',
+  services: 'money-ai',
+  sites: 'money-ai',
+  ai_agents: 'money-ai',
+  agent_studio: 'money-ai',
+}
+
+// Marketplace and removed product surfaces stay out of all user navigation.
+export const navItems = allNavItems
+  .filter((item) => !hiddenNavKeys.has(item.key))
+  .map((item) => ({ ...item, group: navGroups[item.key] ?? undefined }))
+  .sort((a, b) => navOrder.indexOf(a.key) - navOrder.indexOf(b.key))
 
 export const primaryNavItems = navItems.slice(0, 5)

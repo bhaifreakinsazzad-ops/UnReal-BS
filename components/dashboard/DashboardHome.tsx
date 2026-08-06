@@ -6,7 +6,6 @@ import {
   CheckCircle2,
   CreditCard,
   Inbox,
-  Landmark,
   LineChart,
   MessageSquare,
   ShieldCheck,
@@ -23,7 +22,6 @@ interface DashboardHomeProps {
   totalConversations: number | null
   pipelineRevenue: number | null
   walletBalance: number | null
-  udharOutstanding: number | null
 }
 
 function money(amount: number) {
@@ -49,14 +47,12 @@ export function DashboardHome({
   totalConversations,
   pipelineRevenue,
   walletBalance,
-  udharOutstanding,
 }: DashboardHomeProps) {
   const locale = useLocale()
   const isBn = locale === 'bn'
 
   const actions = [
     { label: isBn ? 'ওয়ালেট দেখুন' : 'Open Wallet', href: '/payments', icon: CreditCard, tone: 'gold' },
-    { label: isBn ? 'উধার খাতা দেখুন' : 'Open Udhar Khata', href: '/udhar-khata', icon: Landmark, tone: 'green' },
     { label: isBn ? 'ইনবক্স খুলুন' : 'Open Inbox', href: '/conversations', icon: MessageSquare, tone: 'violet' },
     { label: isBn ? 'সার্ভিস দেখুন' : 'View Services', href: '/services', icon: ShieldCheck, tone: 'blue' },
   ]
@@ -65,13 +61,6 @@ export function DashboardHome({
   // set of strings ("Contact 5 pending leads") shown identically to every user
   // every day under a heading that implied it was computed for them.
   const nextBestActions: string[] = []
-  if (udharOutstanding !== null && udharOutstanding > 0) {
-    nextBestActions.push(
-      isBn
-        ? `উধার খাতায় ${money(udharOutstanding)} বকেয়া — আদায় করুন`
-        : `${money(udharOutstanding)} outstanding in Udhar Khata — collect it`
-    )
-  }
   if (totalConversations !== null && totalConversations > 0) {
     nextBestActions.push(isBn ? 'ইনবক্সের নতুন মেসেজগুলোর উত্তর দিন' : 'Reply to new messages in your inbox')
   }
@@ -116,15 +105,6 @@ export function DashboardHome({
       icon: CreditCard,
       tone: 'gold',
     },
-    {
-      label: isBn ? 'উধার বকেয়া' : 'Udhar Outstanding',
-      value: udharOutstanding === null ? '—' : money(udharOutstanding),
-      helper: udharOutstanding === null
-        ? (isBn ? 'লগইন করুন' : 'Sign in to view')
-        : (isBn ? 'উধার খাতা থেকে' : 'From Udhar Khata'),
-      icon: Landmark,
-      tone: 'green',
-    },
   ]
 
   return (
@@ -154,15 +134,15 @@ export function DashboardHome({
             <p className="mt-2 text-sm text-white/70">
               {isBn ? 'আজকের সর্বোচ্চ প্রভাবশালী কাজ দিয়ে শুরু করুন।' : 'Start with the highest-impact moves today.'}
             </p>
-            <Link href="/udhar-khata" className="mt-5 inline-flex items-center gap-2 text-sm font-black text-[#D8B86A]">
-              {isBn ? 'উধার খাতা দেখুন' : 'Check Udhar Khata'}
+            <Link href="/conversations" className="mt-5 inline-flex items-center gap-2 text-sm font-black text-[#D8B86A]">
+              {isBn ? 'ইনবক্স খুলুন' : 'Open Inbox'}
               <ArrowRight className="h-4 w-4" />
             </Link>
           </div>
         </div>
       </section>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-3 md:gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3 md:gap-4">
         {stats.map((stat) => {
           const Icon = stat.icon
           return (
@@ -253,7 +233,7 @@ export function DashboardHome({
               : [
                   'Public landing captures eligibility demand.',
                   'GHL remains the system of record.',
-                  'Wallet and Udhar Khata show live data.',
+                  'Wallet shows live balance data.',
                   'Service marketplace is ready for manual onboarding.',
                 ]
             ).map((item) => (

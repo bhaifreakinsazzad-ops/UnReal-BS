@@ -16,7 +16,7 @@ export const dynamic = 'force-dynamic'
 // NOT get a GHL workspace — ghl_location_id stays null until an operator
 // provisions one, and lib/tenant.ts refuses to fall back to the shared
 // environment location. That means a brand-new user can immediately use every
-// feature that lives in our own per-user tables (Udhar Khata, Wallet, AI
+// feature that lives in our own per-user tables (Wallet, AI
 // Subscriptions, Virtual Cards) and sees an honest "workspace being set up"
 // state on the CRM screens, rather than another merchant's contacts.
 

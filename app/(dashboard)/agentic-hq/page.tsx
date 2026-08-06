@@ -18,7 +18,7 @@ export default function AgenticHQPage() {
       subheadlineEn="Follow-up bots, appointment setters and reminder agents that run on your own customer list. Nothing is running yet — when it is, you will see real run counts, not sample ones."
       subheadlineBn="ফলো-আপ বট, অ্যাপয়েন্টমেন্ট সেটার ও রিমাইন্ডার এজেন্ট আপনার নিজের কাস্টমার তালিকায় চলবে। এখনো কিছুই চলছে না — চালু হলে আপনি আসল সংখ্যা দেখবেন, নমুনা নয়।"
       features={[
-        { emoji: '🤖', titleEn: 'Follow-up on autopilot', titleBn: 'অটোমেটিক ফলো-আপ', descEn: 'Chase unpaid udhar and quiet leads without remembering to.', descBn: 'মনে রাখার দরকার নেই — বকেয়া উধার ও নিষ্ক্রিয় লিড নিজেই ফলো-আপ করবে।' },
+        { emoji: '🤖', titleEn: 'Follow-up on autopilot', titleBn: 'অটোমেটিক ফলো-আপ', descEn: 'Follow up with quiet leads without remembering to.', descBn: 'মনে রাখার দরকার নেই — নিষ্ক্রিয় লিড নিজেই ফলো-আপ করবে।' },
         { emoji: '📅', titleEn: 'Appointment setting', titleBn: 'অ্যাপয়েন্টমেন্ট সেটিং', descEn: 'Book customers in without a back-and-forth.', descBn: 'বারবার কথা না বলেই কাস্টমারের সময় ঠিক করুন।' },
         { emoji: '✅', titleEn: 'Honest run history', titleBn: 'সত্যিকারের রেকর্ড', descEn: 'Every run logged and auditable — no invented activity.', descBn: 'প্রতিটি কাজের সত্যিকারের রেকর্ড — বানানো কিছু নয়।' },
       ]}

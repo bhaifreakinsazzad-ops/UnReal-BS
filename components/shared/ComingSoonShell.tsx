@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Bot, CreditCard, Crown, HandCoins, Lock, Plug, Sparkles, Store } from 'lucide-react'
+import { Bot, CreditCard, HandCoins, Lock, Sparkles, Store } from 'lucide-react'
 import { useLocale } from '@/lib/i18n/context'
 
 interface ComingSoonFeature {
@@ -13,7 +13,7 @@ interface ComingSoonFeature {
 }
 
 interface ComingSoonShellProps {
-  feature: 'opportunities' | 'credit_center' | 'meetally' | 'clan' | 'skills' | 'agentic_hq'
+  feature: 'opportunities' | 'credit_center' | 'meetally' | 'agentic_hq'
   eyebrowEn: string
   eyebrowBn: string
   headlineEn: string
@@ -31,8 +31,6 @@ const FEATURE_ICON = {
   opportunities: HandCoins,
   credit_center: CreditCard,
   meetally: Store,
-  clan: Crown,
-  skills: Plug,
   agentic_hq: Bot,
 } as const
 

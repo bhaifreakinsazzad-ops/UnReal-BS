@@ -81,7 +81,7 @@ function LoginForm() {
             </div>
             <h2 className="text-white font-bold text-xl mb-1">Sign in to your workspace</h2>
             <p className="text-gray-400 text-sm">
-              Welcome back. Enter your details to reach your wallet, khata and inbox.
+              Welcome back. Enter your details to reach your wallet, inbox and business tools.
             </p>
           </div>
 
@@ -142,7 +142,7 @@ function LoginForm() {
         </form>
 
         <p className="text-center text-xs text-gray-600 mt-6">
-          Copyright 2026 UnReal BS - Powered by NotRealEngine, LLC
+          Developed by BhaiSazzaD.onlibe and NotRealEngine, LLC. Powered by Go High Level.
         </p>
       </div>
     </div>

@@ -89,7 +89,7 @@ export function AdminUsersShell() {
         <p className="mt-3 max-w-2xl text-sm leading-6 text-white/65">
           Assign each customer their own GHL sub-account location id. Until you do, their
           CRM screens show a &quot;workspace being set up&quot; state — they never see another
-          customer&apos;s data. Their wallet, Udhar Khata and AI work from day one regardless.
+          customer&apos;s data. Their wallet and AI work from day one regardless.
           Leave the daily cap and free-per-day fields blank to use the platform defaults
           (৳500/day, 10 free messages); enter 0 to freeze an account without deleting it.
         </p>

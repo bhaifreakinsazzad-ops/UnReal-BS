@@ -92,7 +92,7 @@ export default function SignupPage() {
             </div>
             <h2 className="text-white font-bold text-xl mb-1">শুরু করুন — Get started free</h2>
             <p className="text-gray-400 text-sm">
-              Udhar Khata, Wallet and AI are live on your account the moment you sign up.
+              Wallet, AI and business tools are live on your account the moment you sign up.
             </p>
           </div>
 
@@ -165,7 +165,7 @@ export default function SignupPage() {
           </button>
 
           <div className="space-y-1.5 pt-1">
-            {['Udhar Khata — track who owes you', 'Wallet & deposits via bKash / Nagad / Rocket', 'Metered AI, pay only for what you use'].map((f) => (
+            {['Wallet & deposits via bKash / Nagad / Rocket', 'Metered AI, pay only for what you use', 'CRM-ready workspace for business follow-up'].map((f) => (
               <div key={f} className="flex items-center gap-2 text-[11px] text-gray-400">
                 <CheckCircle2 className="h-3.5 w-3.5 flex-shrink-0 text-[#00C875]" />
                 <span>{f}</span>
@@ -188,7 +188,7 @@ export default function SignupPage() {
         </form>
 
         <p className="text-center text-xs text-gray-600 mt-6">
-          Copyright 2026 UnReal BS - Powered by NotRealEngine, LLC
+          Developed by BhaiSazzaD.onlibe and NotRealEngine, LLC. Powered by Go High Level.
         </p>
       </div>
     </div>

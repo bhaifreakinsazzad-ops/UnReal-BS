@@ -33,7 +33,7 @@ export default function TermsPage() {
           <p className="mt-2">
             Workspace access is provisioned by UnReal BS; there is no public self-registration.
             You are responsible for keeping your login credentials confidential and for the
-            accuracy of the business data (including Udhar Khata ledger entries) you enter.
+            accuracy of the business data you enter.
           </p>
         </section>
 

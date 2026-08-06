@@ -7,9 +7,7 @@
     "agentic_hq": "Agentic HQ",
     "workflows": "Workflows",
     "social_yo": "Social Yo",
-    "clan": "Clan",
-    "app_developer": "App Developer",
-    "skills": "Skills & Connections"
+    "app_developer": "App Developer"
   },
   "common": {
     "search": "Search...",
@@ -140,17 +138,6 @@
     "published": "Published",
     "failed": "Failed"
   },
-  "clan": {
-    "title": "Clan",
-    "members": "Members",
-    "content": "Content",
-    "active_members": "Active Members",
-    "new_members": "New Members",
-    "revenue": "Revenue",
-    "popular_content": "Popular Content",
-    "add_content": "Add Content",
-    "add_section": "Add Section"
-  },
   "app_developer": {
     "title": "App Developer",
     "new_project": "New Project",
@@ -158,25 +145,6 @@
     "preview": "Preview",
     "ask_ai": "Ask AI...",
     "live": "Live"
-  },
-  "skills": {
-    "title": "Skills & Connections",
-    "browse": "Browse",
-    "installed": "Installed",
-    "custom": "Custom",
-    "all": "All",
-    "crm": "CRM",
-    "social_media": "Social Media",
-    "payment": "Payment",
-    "ai": "AI",
-    "mcp": "MCP",
-    "custom_label": "Custom",
-    "add_mcp": "Add MCP Server",
-    "server_url": "Server URL",
-    "api_key": "API Key",
-    "test_connection": "Test Connection",
-    "connected": "Connected",
-    "disconnected": "Disconnected"
   },
   "sites": {
     "title": "Sites",
