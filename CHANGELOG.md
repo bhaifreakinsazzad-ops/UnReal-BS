@@ -17,6 +17,7 @@
 ### Security
 
 - Centralized administrator checks, redacted sensitive logs, restricted uploads/downloads, revoked browser-role commerce/RPC access, pinned function search paths, and added unique payment/refund references.
+- Upgraded Next.js and its image-processing dependency chain to patched releases, clearing the critical RCE and high-severity dependency advisories reported by `npm audit`.
 
 ### Operations
 
