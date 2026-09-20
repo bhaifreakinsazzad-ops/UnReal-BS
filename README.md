@@ -29,7 +29,7 @@ Meta Pixel does not load until the visitor grants marketing consent. Browser and
 ## Stack
 
 - Node.js 24.18.x and npm 11.16.0
-- Next.js 16.3.0, React 19, and Tailwind CSS 4
+- Next.js 16.3.5, React 19, and Tailwind CSS 4
 - NextAuth v5 Credentials sessions with an eight-hour absolute lifetime
 - Supabase/Postgres with RLS, additive migrations, audit records, and server-only service-role access
 - GoHighLevel private integration APIs

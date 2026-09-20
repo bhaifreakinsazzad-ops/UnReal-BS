@@ -1,19 +1,19 @@
 # QA Report
 
-Updated: 5 August 2026
+Updated: 20 September 2026
 
 ## Automated results
 
 | Check | Result |
 |---|---|
-| Installation baseline | Earlier clean `npm ci` PASS (481 packages); final lockfile retry timed out on the Windows workstation after npm audit, while lock-respecting `npm install` restored the tree |
+| Installation baseline | PASS, clean `npm@11.16.0 ci` installed 495 packages from the lockfile |
 | ESLint | PASS, zero warnings |
 | TypeScript | PASS |
-| Vitest | PASS, 124 tests across 15 files |
+| Vitest | PASS, 130 tests across 16 files |
 | Dependency audit | PASS, 0 vulnerabilities across production and development dependencies |
-| Next.js production build | PASS on Next.js 16.3.0 |
-| Migration syntax | PASS, PostgreSQL parser accepted 100 statements |
-| Playwright | PASS, 11 passed and 4 intentionally skipped duplicate project checks |
+| Next.js production build | PASS on Next.js 16.3.5 |
+| Migration syntax | Earlier PASS retained; PostgreSQL parser accepted 100 statements |
+| Playwright | Current local rerun blocked by repeated browser-CDN timeouts; the prior run passed 11 tests with 4 intentional duplicate-project skips, and GitHub CI remains the required browser gate |
 
 ## Security and database evidence
 
@@ -27,7 +27,7 @@ Updated: 5 August 2026
 
 ## Browser matrix
 
-The local production-mode Playwright run verified desktop, mobile, reduced motion, 320-1440px overflow safety, keyboard focus, the public funnel, consent-gated Meta loading, dark storefront behavior, authenticated redirects, capability-safe health endpoints, and preview CSP headers. Authenticated operator commerce and real provider event delivery still require the production canary.
+The earlier local production-mode Playwright run verified desktop, mobile, reduced motion, 320-1440px overflow safety, keyboard focus, the public funnel, consent-gated Meta loading, dark storefront behavior, authenticated redirects, capability-safe health endpoints, and preview CSP headers. A 20 September live smoke pass also verified the production landing, application, privacy, terms, login, signup, health, and dark-storefront boundaries without site-originated browser errors. Authenticated operator commerce and real provider event delivery still require the production canary.
 
 The Chrome-control skill could not use its required Node REPL browser surface because that tool was unavailable in this workspace. Standalone Playwright supplied the reproducible browser evidence instead.
 
