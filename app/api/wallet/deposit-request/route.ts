@@ -77,7 +77,7 @@ export async function POST(request: Request) {
   try {
     const result = await createDepositRequest(userId, email, parsed.data, {
       tag: 'WALLET-DEPOSIT-REQUEST',
-      source: 'UnReal BS Wallet — Deposit Request',
+      source: 'UnReal Systems Wallet — Deposit Request',
     })
 
     if ('error' in result && result.error) {

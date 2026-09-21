@@ -5,6 +5,7 @@ import { X, Send, Sparkles, MessageCircle, Loader2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useLocale } from '@/lib/i18n/context'
 import { usePuterAI } from '@/hooks/usePuterAI'
+import { brand } from '@/lib/brand'
 
 interface Message {
   id: string
@@ -13,14 +14,14 @@ interface Message {
 }
 
 const SYSTEM_PROMPT = {
-  en: `You are BhaiFreakin, a concise AI business assistant inside UnReal BS.
-Answer in practical English unless the user writes in Bangla. Help with leads, workflows, marketing, sales, customer support, and operating decisions.`,
-  bn: `আপনি BhaiFreakin, UnReal BS-এর AI বিজনেস সহকারী। বাংলায় সংক্ষিপ্ত ও ব্যবহারযোগ্য উত্তর দিন। লিড, ওয়ার্কফ্লো, মার্কেটিং, সেলস এবং কাস্টমার সাপোর্টে সাহায্য করুন।`,
+  en: `You are ${brand.aiAssistantName}, a concise AI business assistant inside ${brand.name}.
+Answer in practical English unless the user writes in Bangla. Help with leads, workflows, marketing, sales, client delivery, customer support, and operating decisions.`,
+  bn: `আপনি ${brand.aiAssistantName}, ${brand.name}-এর AI বিজনেস সহকারী। বাংলায় সংক্ষিপ্ত ও ব্যবহারযোগ্য উত্তর দিন। লিড, ওয়ার্কফ্লো, মার্কেটিং, সেলস, ক্লায়েন্ট ডেলিভারি এবং কাস্টমার সাপোর্টে সাহায্য করুন।`,
 }
 
 const WELCOME = {
-  en: 'Hi, I am BhaiFreakin. Ask me about leads, workflows, marketing, sales, or customer support.',
-  bn: 'আমি BhaiFreakin। লিড, ওয়ার্কফ্লো, মার্কেটিং, সেলস বা কাস্টমার সাপোর্ট নিয়ে প্রশ্ন করুন।',
+  en: `Hi, I am ${brand.aiAssistantName}. Ask me about leads, workflows, marketing, sales, client delivery, or customer support.`,
+  bn: `আমি ${brand.aiAssistantName}। লিড, ওয়ার্কফ্লো, মার্কেটিং, সেলস, ক্লায়েন্ট ডেলিভারি বা কাস্টমার সাপোর্ট নিয়ে প্রশ্ন করুন।`,
 }
 
 const QUICK_PROMPTS = {
@@ -76,12 +77,12 @@ export function BhaiFreakinFAB() {
               <Sparkles className="w-5 h-5 text-white" />
             </div>
             <div>
-              <p className="text-white font-bold text-sm leading-none">BhaiFreakin</p>
+              <p className="text-white font-bold text-sm leading-none">{brand.aiAssistantName}</p>
               <p className="text-purple-200 text-xs mt-0.5">
                 {isReady ? (isBn ? 'AI বিজনেস অ্যাসিস্ট্যান্ট • অনলাইন' : 'AI business assistant • online') : (isBn ? 'লোড হচ্ছে...' : 'Loading...')}
               </p>
             </div>
-            <button onClick={() => setOpen(false)} className="ml-auto text-white/70 hover:text-white" aria-label="Close BhaiFreakin AI">
+            <button onClick={() => setOpen(false)} className="ml-auto text-white/70 hover:text-white" aria-label={`Close ${brand.aiAssistantName}`}>
               <X className="w-5 h-5" />
             </button>
           </div>
@@ -146,7 +147,7 @@ export function BhaiFreakinFAB() {
       <button
         onClick={() => setOpen(!open)}
         className={cn('fixed bottom-20 right-4 md:bottom-6 md:right-6 w-14 h-14 rounded-2xl gradient-primary shadow-lg z-50', 'flex items-center justify-center transition-all duration-200', 'hover:shadow-xl hover:scale-105 active:scale-95 bhaifreaking-glow', open && 'hidden')}
-        aria-label="Open BhaiFreakin AI"
+        aria-label={`Open ${brand.aiAssistantName}`}
       >
         <MessageCircle className="w-6 h-6 text-white" />
         <span className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-[#00C875] rounded-full border-2 border-white pulse-dot" />

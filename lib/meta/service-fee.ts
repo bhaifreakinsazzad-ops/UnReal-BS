@@ -1,4 +1,4 @@
-// What UnReal BS charges to set up and run a managed ad campaign.
+// What UnReal Systems charges to set up and run a managed ad campaign.
 //
 // This is OUR fee for the work — it is not ad spend. Ad spend goes to Meta and
 // never touches the wallet (see app/api/ads/campaigns/route.ts).

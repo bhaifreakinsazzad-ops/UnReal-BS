@@ -128,7 +128,7 @@ export async function POST(request: Request) {
         const response = await upsertContact(LOCATION_ID, {
           companyName: userRow?.business_name || undefined,
           email: userRow?.email || email,
-          source: 'UnReal BS Virtual Cards — Order Request',
+          source: 'UnReal Systems Virtual Cards — Order Request',
         })
         const contactId = response.contact?.id
         if (contactId) {

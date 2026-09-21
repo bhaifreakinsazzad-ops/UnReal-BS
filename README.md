@@ -1,6 +1,6 @@
-# UnReal BS — Business Systems
+# UnReal Systems — SaaS IT Agency
 
-UnReal BS is a production Next.js business portal for Bangladeshi businesses. It combines a public eligibility funnel, GoHighLevel-backed CRM workflows, account-scoped business tools, AI services, virtual-card operations, advertising operations, and feature-gated platform commerce.
+UnReal Systems is a production Next.js SaaS IT agency platform for Bangladeshi operators. It combines a public agency-takeover funnel, GoHighLevel-backed CRM workflows, account-scoped client tools, AI services, virtual-card operations, advertising operations, managed service packages, and feature-gated platform commerce.
 
 ## Public and protected routes
 
@@ -10,7 +10,7 @@ Public conversion routes:
 - `/apply` — Turnstile-protected eligibility application
 - `/privacy` and `/terms` — public policies
 
-Protected product routes include the dashboard, opportunities, credit center, conversations, contacts, workflows, sites, AI tools, payments, and operator administration.
+Protected product routes include the agency control room, opportunities, credit center, conversations, contacts, workflows, sites and funnels, AI tools, SaaS IT services, payments, and operator administration.
 
 Platform storefront routes (`/p`, `/shop`, `/checkout`, and `/learn`) return `404` until their server-controlled flags are deliberately enabled.
 

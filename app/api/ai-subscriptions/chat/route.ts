@@ -23,7 +23,7 @@ export const dynamic = 'force-dynamic'
 const DB_NOT_READY_MESSAGE =
   'Database not yet configured. Run the migration in supabase/migrations/0004_shared_wallet_and_virtual_cards.sql.'
 
-// Neutral, non-BhaiFreakin-branded system prompt — this is a "pick your
+// Neutral, non-UnReal AI-branded system prompt — this is a "pick your
 // model" tool, not the free branded assistant.
 const SYSTEM_PROMPT = 'You are a helpful AI assistant. Answer clearly and practically.'
 
