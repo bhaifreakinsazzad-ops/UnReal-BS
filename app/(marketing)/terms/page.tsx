@@ -1,6 +1,6 @@
 export const metadata = {
-  title: 'Terms of Service | UnReal BS',
-  description: 'Terms governing use of the UnReal BS platform and eligibility application.',
+  title: 'Terms of Service | UnReal Systems',
+  description: 'Terms governing use of the UnReal Systems platform and eligibility application.',
 }
 
 export default function TermsPage() {
@@ -13,8 +13,8 @@ export default function TermsPage() {
         <section>
           <h2 className="text-lg font-semibold text-[#0D0D1A]">Who this applies to</h2>
           <p className="mt-2">
-            These terms apply to anyone submitting the UnReal BS eligibility application and to
-            businesses provisioned a UnReal BS workspace account. UnReal BS is operated by
+            These terms apply to anyone submitting the UnReal Systems eligibility application and to
+            businesses provisioned a UnReal Systems workspace account. UnReal Systems is operated by
             NotRealEngine, LLC.
           </p>
         </section>
@@ -31,7 +31,7 @@ export default function TermsPage() {
         <section>
           <h2 className="text-lg font-semibold text-[#0D0D1A]">Workspace accounts</h2>
           <p className="mt-2">
-            Workspace access is provisioned by UnReal BS; there is no public self-registration.
+            Workspace access is provisioned by UnReal Systems; there is no public self-registration.
             You are responsible for keeping your login credentials confidential and for the
             accuracy of the business data you enter.
           </p>

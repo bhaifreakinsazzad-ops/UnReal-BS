@@ -63,7 +63,7 @@ export async function POST(request: Request) {
     application.service ? `SERVICE-${application.service.toUpperCase().replace(/[^A-Z0-9]+/g, '-')}` : '',
   ].filter(Boolean)
   const sourceSummary = [
-    'UNREAL BS Eligibility Application',
+    'UnReal Systems Eligibility Application',
     `Business: ${application.businessName}`,
     `Type: ${application.businessType}`,
     `Area: ${application.serviceArea}`,

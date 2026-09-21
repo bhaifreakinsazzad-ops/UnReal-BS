@@ -35,7 +35,7 @@ export const openrouterProvider: AIProvider = {
         // Attribution headers OpenRouter uses for its public leaderboards —
         // optional, but recommended by their docs. Not customer PII.
         'HTTP-Referer': 'https://unreal-bs.shop',
-        'X-Title': 'UnReal BS',
+        'X-Title': 'UnReal Systems',
       },
       body: JSON.stringify({
         model: req.model,

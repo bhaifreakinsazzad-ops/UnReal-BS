@@ -2,7 +2,7 @@
 
 ## System boundary
 
-UnReal BS is one Next.js 16 application deployed to Vercel. `proxy.ts` is the request boundary: it adds request IDs and a nonce-based CSP, blocks unsafe cross-origin/non-JSON API mutations, keeps commerce routes dark, and redirects protected routes to login.
+UnReal Systems is one Next.js 16 application deployed to Vercel. `proxy.ts` is the request boundary: it adds request IDs and a nonce-based CSP, blocks unsafe cross-origin/non-JSON API mutations, keeps commerce routes dark, and redirects protected routes to login.
 
 ```mermaid
 flowchart LR

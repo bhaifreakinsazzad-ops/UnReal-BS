@@ -1,4 +1,4 @@
-# UnReal BS — Frontend Designer Handoff
+# UnReal Systems — Frontend Designer Handoff
 
 Welcome. This app is being handed to you to make **1000x more interactive and dynamically modern** — visual design, motion, layout, micro-interactions. This document tells you what you need to know before you start, what's safe to change, and what to leave alone.
 
@@ -8,7 +8,7 @@ Read this fully before touching code. It's the difference between a smooth hando
 
 ## 1. What this is
 
-**UnReal BS** ("Business Systems") — a B2B SaaS dashboard for Bangladeshi small businesses, built on top of a GoHighLevel (GHL) sub-account. It handles leads, customer credit tracking (Udhar Khata), an AI chat wallet, virtual card reselling, and more. Bilingual: English and Bangla, toggled live.
+**UnReal Systems** ("SaaS IT Agency") — a branded agency operating system for Bangladeshi operators, built on top of GoHighLevel (GHL), Supabase, AI providers, and Vercel. It handles leads, client delivery workflows, service packages, customer credit tracking (Udhar Khata), AI assistants, wallet operations, virtual card reselling, and digital product commerce. Bilingual: English and Bangla, toggled live.
 
 Deployed at **unreal-bs.shop** (Vercel + Supabase + GoHighLevel). You will not have production credentials — see §5.
 
