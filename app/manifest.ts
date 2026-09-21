@@ -1,11 +1,12 @@
 import type { MetadataRoute } from 'next'
+import { brand } from '@/lib/brand'
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
     id: '/',
-    name: 'UnReal BS — Business Systems',
-    short_name: 'UnReal BS',
-    description: 'AI business operating system for CRM, automations, conversations, sites, agents, wallet, and business operations.',
+    name: `${brand.name} — SaaS IT Agency`,
+    short_name: brand.shortName,
+    description: brand.description,
     start_url: '/',
     scope: '/',
     display: 'standalone',

@@ -4,6 +4,7 @@ import Script from "next/script";
 import { headers } from "next/headers";
 import { MarketingConsent } from "@/components/privacy/MarketingConsent";
 import { ServiceWorkerRegistration } from "@/components/pwa/ServiceWorkerRegistration";
+import { brand, brandKeywords } from "@/lib/brand";
 import "./globals.css";
 
 const inter = Inter({
@@ -33,15 +34,15 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "UnReal BS - Business Systems",
-  description: "English-first AI business operating system for CRM, automations, conversations, sites, and agents.",
-  keywords: ["CRM", "business", "Bangladesh", "automation", "AI agents"],
-  applicationName: "UnReal BS",
+  title: `${brand.name} - SaaS IT Agency`,
+  description: brand.description,
+  keywords: brandKeywords,
+  applicationName: brand.name,
   manifest: "/manifest.webmanifest",
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
-    title: "UnReal BS",
+    title: brand.shortName,
   },
   formatDetection: {
     telephone: false,

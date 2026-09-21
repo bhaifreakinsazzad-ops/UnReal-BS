@@ -46,8 +46,8 @@ export function StorefrontShell({ children }: { children: React.ReactNode }) {
         <footer className="max-w-3xl mx-auto px-4 py-8 text-center">
           <p className="text-xs text-gray-400">
             {locale === 'bn'
-              ? 'UnReal BS দিয়ে বিক্রি হচ্ছে'
-              : 'Sold through UnReal BS'}
+              ? 'UnReal Systems দিয়ে বিক্রি হচ্ছে'
+              : 'Sold through UnReal Systems'}
           </p>
         </footer>
       </div>

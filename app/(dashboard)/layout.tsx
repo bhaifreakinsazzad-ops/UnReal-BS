@@ -54,7 +54,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       {/* Mobile Bottom Nav */}
       <MobileBottomNav locale={locale} />
 
-      {/* BhaiFreakin AI FAB */}
+      {/* UnReal AI FAB */}
       <BhaiFreakinFAB />
     </div>
   )
