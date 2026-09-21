@@ -1,7 +1,7 @@
 import { UnrealBSLanding } from '@/components/marketing/UnrealBSLanding'
 
 export const metadata = {
-  title: 'UNREAL BS - Founding Partner Program',
+  title: 'UnReal BS - SaaS IT Agency Partner Program',
   description: 'Lead-Ready Business Portal + Opportunity Credit for Bangladesh founding clients.',
 }
 
