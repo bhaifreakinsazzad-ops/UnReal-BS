@@ -34,15 +34,15 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: `${brand.name} - SaaS IT Agency`,
+  title: "UnReal BS - SaaS IT Agency",
   description: brand.description,
   keywords: brandKeywords,
-  applicationName: brand.name,
+  applicationName: "UnReal BS",
   manifest: "/manifest.webmanifest",
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
-    title: brand.shortName,
+    title: "UnReal BS",
   },
   formatDetection: {
     telephone: false,
