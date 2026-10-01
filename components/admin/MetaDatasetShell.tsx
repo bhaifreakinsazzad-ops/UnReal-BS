@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { CheckCircle2, DatabaseZap, Loader2, ShieldCheck, XCircle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
-import { requestPasswordReverification } from '@/lib/security/reverify-client'
+import { stepUpFetch, safeJson } from '@/lib/api-client'
 
 type ValidationResponse = {
   ok?: boolean
@@ -24,26 +24,15 @@ export function MetaDatasetShell() {
     setBusy(true)
     setResult(null)
     try {
-      const submit = () => fetch('/api/admin/meta/validate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: '{}',
-      })
-      let response = await submit()
-      if (response.status === 428) {
-        const password = await requestPasswordReverification(
-          'Re-enter your password before sending a synthetic event to Meta Test Events.'
-        )
-        if (!password) throw new Error('Password re-verification was cancelled.')
-        const verified = await fetch('/api/auth/reverify', {
+      const response = await stepUpFetch({
+        request: () => fetch('/api/admin/meta/validate', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ password }),
-        })
-        if (!verified.ok) throw new Error('Password verification failed.')
-        response = await submit()
-      }
-      const json = await response.json().catch(() => ({})) as ValidationResponse
+          body: '{}',
+        }),
+        reverifyMessage: 'Re-enter your password before sending a synthetic event to Meta Test Events.',
+      })
+      const json = await safeJson<ValidationResponse>(response)
       setResult({ ...json, ok: response.ok && json.ok === true })
     } catch (error) {
       setResult({ ok: false, message: error instanceof Error ? error.message : 'Validation failed.' })
