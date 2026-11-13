@@ -5,6 +5,7 @@ import { ExternalLink, Loader2, RotateCcw, Search, ShieldOff } from 'lucide-reac
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
+import { apiJson } from '@/lib/api-client'
 
 interface Product {
   id: string
@@ -39,9 +40,8 @@ export function AdminProductsShell() {
   const [reasons, setReasons] = useState<Record<string, string>>({})
 
   function load() {
-    return fetch('/api/admin/products')
-      .then((res) => (res.ok ? res.json() : Promise.reject(new Error('failed'))))
-      .then((json: { products: Product[] }) => setProducts(json.products ?? []))
+    return apiJson<{ products: Product[] }>('/api/admin/products')
+      .then((json) => setProducts(json.products ?? []))
   }
 
   useEffect(() => {
@@ -55,13 +55,10 @@ export function AdminProductsShell() {
     setError(null)
     setNotice(null)
     try {
-      const res = await fetch('/api/admin/products', {
+      await apiJson('/api/admin/products', {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ productId, action, note: reasons[productId]?.trim() || undefined }),
-      })
-      const json = await res.json().catch(() => ({}))
-      if (!res.ok) throw new Error(json?.message ?? 'Could not update this product.')
+      }, 'Could not update this product.')
       setNotice(
         action === 'take_down'
           ? 'Taken down. Existing buyers keep their access.'

@@ -5,7 +5,7 @@ import { AlertTriangle, CheckCircle2, Loader2, RotateCcw, Search, XCircle } from
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
-import { requestPasswordReverification } from '@/lib/security/reverify-client'
+import { apiJson, apiStepUpJson } from '@/lib/api-client'
 
 interface Order {
   id: string
@@ -51,9 +51,8 @@ export function AdminOrdersShell() {
   const [notes, setNotes] = useState<Record<string, string>>({})
 
   function load() {
-    return fetch('/api/admin/orders')
-      .then((res) => (res.ok ? res.json() : Promise.reject(new Error('failed'))))
-      .then((json: { orders: Order[] }) => setOrders(json.orders ?? []))
+    return apiJson<{ orders: Order[] }>('/api/admin/orders', undefined, 'Could not load orders.')
+      .then((json) => setOrders(json.orders ?? []))
   }
 
   useEffect(() => {
@@ -80,25 +79,14 @@ export function AdminOrdersShell() {
     setError(null)
     setNotice(null)
     try {
-      const mutate = () => fetch('/api/admin/orders', {
+      await apiStepUpJson('/api/admin/orders', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json', 'Idempotency-Key': idempotencyKey },
         body: JSON.stringify({ orderId, action, expectedStatus: order.status, reason, refundReference }),
+      }, {
+        reverify: 'Re-enter your password to authorize this money operation.',
+        failure: 'Could not update this order.',
       })
-      let res = await mutate()
-      if (res.status === 428) {
-        const password = await requestPasswordReverification('Re-enter your password to authorize this money operation.')
-        if (!password) throw new Error('Password re-verification was cancelled.')
-        const verified = await fetch('/api/auth/reverify', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ password }),
-        })
-        if (!verified.ok) throw new Error('Password verification failed.')
-        res = await mutate()
-      }
-      const json = await res.json().catch(() => ({}))
-      if (!res.ok) throw new Error(json?.message ?? 'Could not update this order.')
       setNotice(
         action === 'confirm'
           ? 'Confirmed. Buyer access is active and platform revenue is recorded.'

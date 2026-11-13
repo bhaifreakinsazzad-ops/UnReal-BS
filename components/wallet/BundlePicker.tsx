@@ -5,6 +5,7 @@ import { Check, Clock, Loader2, Sparkles } from 'lucide-react'
 import { Card, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { useLocale } from '@/lib/i18n/context'
+import { apiJson } from '@/lib/api-client'
 
 interface Bundle {
   code: string
@@ -47,9 +48,8 @@ export function BundlePicker({ onOrdered }: { onOrdered?: () => void }) {
   const [ordered, setOrdered] = useState<{ price: number; credit: number } | null>(null)
 
   useEffect(() => {
-    fetch('/api/bundles')
-      .then((res) => (res.ok ? res.json() : Promise.reject(new Error('failed'))))
-      .then((json: { bundles: Bundle[] }) => setBundles(json.bundles ?? []))
+    apiJson<{ bundles: Bundle[] }>('/api/bundles')
+      .then((json) => setBundles(json.bundles ?? []))
       .catch(() => setError(isBn ? 'প্যাকেজ লোড করা যায়নি।' : 'Could not load packages.'))
       .finally(() => setLoading(false))
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -59,13 +59,11 @@ export function BundlePicker({ onOrdered }: { onOrdered?: () => void }) {
     setSubmitting(true)
     setError(null)
     try {
-      const res = await fetch('/api/bundles', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ code, method }),
-      })
-      const json = await res.json().catch(() => ({}))
-      if (!res.ok) throw new Error(json?.message ?? (isBn ? 'অর্ডার করা যায়নি।' : 'Could not place this order.'))
+      const json = await apiJson<{ request: { priceBdt: number; creditBdt: number } }>(
+        '/api/bundles',
+        { method: 'POST', body: JSON.stringify({ code, method }) },
+        isBn ? 'অর্ডার করা যায়নি।' : 'Could not place this order.',
+      )
 
       setOrdered({ price: json.request.priceBdt, credit: json.request.creditBdt })
       onOrdered?.()
