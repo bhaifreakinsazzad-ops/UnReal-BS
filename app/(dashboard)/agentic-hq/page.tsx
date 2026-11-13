@@ -1,6 +1,6 @@
 import { ComingSoonShell } from '@/components/shared/ComingSoonShell'
 
-export const metadata = { title: 'Agentic HQ - UNREAL BS' }
+export const metadata = { title: 'Agentic HQ - UnReal Systems' }
 
 // Was a fabricated agent dashboard: two invented agents shown under a tab
 // literally labelled "My Agents", one with a green "running" pill claiming it

@@ -79,7 +79,7 @@ export async function syncOrderToGhl(orderId: string): Promise<void> {
       lastName,
       phone: order.buyer_phone,
       email: order.buyer_email ?? undefined,
-      source: 'UnReal BS digital product',
+      source: 'UnReal Systems digital product',
     })
 
     const contactId = upserted?.contact?.id

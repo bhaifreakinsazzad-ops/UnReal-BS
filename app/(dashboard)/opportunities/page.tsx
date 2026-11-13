@@ -1,6 +1,6 @@
 import { ComingSoonShell } from '@/components/shared/ComingSoonShell'
 
-export const metadata = { title: 'Opportunities - UNREAL BS' }
+export const metadata = { title: 'Opportunities - UnReal Systems' }
 
 export default function OpportunitiesPage() {
   return (

@@ -7,6 +7,7 @@ import { signIn } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { CheckCircle2, Loader2, Sparkles } from 'lucide-react'
 import { captureAttribution, createMetaEventId, trackMetaEvent } from '@/lib/meta/client-events'
+import { brand } from '@/lib/brand'
 
 // Public self-registration. A new account gets its own wallet and its own
 // per-user ledgers immediately; the CRM screens show an honest
@@ -73,15 +74,15 @@ export default function SignupPage() {
           <div className="mx-auto mb-5 flex h-24 w-24 items-center justify-center rounded-[1.75rem] border border-[#D8B86A]/25 bg-black/30 shadow-[0_0_60px_rgba(216,184,106,0.22)] backdrop-blur">
             <Image
               src="/logo.png"
-              alt="UnReal BS Business Systems"
+              alt={`${brand.name} SaaS IT Agency`}
               width={92}
               height={92}
               className="h-20 w-20 object-contain"
               priority
             />
           </div>
-          <h1 className="text-3xl font-bold tracking-tight text-white">UnReal BS</h1>
-          <p className="text-[#D8B86A] text-sm mt-1 font-medium tracking-wide">Business Systems</p>
+          <h1 className="text-3xl font-bold tracking-tight text-white">{brand.name}</h1>
+          <p className="text-[#D8B86A] text-sm mt-1 font-medium tracking-wide">SaaS IT Agency</p>
         </div>
 
         <form onSubmit={handleSubmit} className="bg-[#101024]/90 border border-white/10 rounded-3xl p-6 space-y-5 shadow-2xl backdrop-blur">
@@ -92,7 +93,7 @@ export default function SignupPage() {
             </div>
             <h2 className="text-white font-bold text-xl mb-1">শুরু করুন — Get started free</h2>
             <p className="text-gray-400 text-sm">
-              Wallet, AI and business tools are live on your account the moment you sign up.
+              Wallet, AI, client tools, and the agency OS are live on your account the moment you sign up.
             </p>
           </div>
 

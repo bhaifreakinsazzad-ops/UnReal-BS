@@ -14,7 +14,7 @@ import { useLocale } from '@/lib/i18n/context'
 // Metered, wallet-based chat against real provider models (OpenAI/Anthropic/
 // Google), proxied server-side via /api/ai-subscriptions/*. Intentionally
 // built from scratch, structurally inspired by (but sharing no code or
-// runtime path with) the free BhaiFreakin AI feature — this never touches
+// runtime path with) the free UnReal AI feature — this never touches
 // window.puter.
 
 interface AIModel {

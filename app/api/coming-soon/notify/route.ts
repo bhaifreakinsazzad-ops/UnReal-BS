@@ -69,7 +69,7 @@ export async function POST(request: Request) {
       try {
         const response = await upsertContact(LOCATION_ID, {
           email,
-          source: `UnReal BS Coming Soon — ${feature}`,
+          source: `UnReal Systems Coming Soon — ${feature}`,
         })
         const contactId = response.contact?.id
         if (contactId) {

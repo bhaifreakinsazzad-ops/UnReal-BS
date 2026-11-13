@@ -1,6 +1,6 @@
 export const metadata = {
-  title: 'Privacy Policy | UnReal BS',
-  description: 'How UnReal BS collects, uses, and protects your information.',
+  title: 'Privacy Policy | UnReal Systems',
+  description: 'How UnReal Systems collects, uses, and protects your information.',
 }
 
 export default function PrivacyPage() {
@@ -26,8 +26,8 @@ export default function PrivacyPage() {
           <h2 className="text-lg font-semibold text-[#0D0D1A]">How we use it</h2>
           <p className="mt-2">
             We use this information to evaluate your application, contact you about eligibility,
-            and, if you become a client, to operate your UnReal BS workspace. Application data is
-            stored in our GoHighLevel CRM and is only accessible to the UnReal BS team.
+            and, if you become a client, to operate your UnReal Systems workspace. Application data is
+            stored in our GoHighLevel CRM and is only accessible to the UnReal Systems team.
           </p>
         </section>
 
@@ -68,7 +68,7 @@ export default function PrivacyPage() {
           <p className="mt-2">
             If you are provisioned a workspace account, business data you enter is stored in
             our database and is only accessible to your
-            account and the UnReal BS team for support purposes.
+            account and the UnReal Systems team for support purposes.
           </p>
         </section>
 
@@ -85,7 +85,7 @@ export default function PrivacyPage() {
         <section>
           <h2 className="text-lg font-semibold text-[#0D0D1A]">Contact</h2>
           <p className="mt-2">
-            UnReal BS is operated by NotRealEngine, LLC. For privacy questions or data requests,
+            UnReal Systems is operated by NotRealEngine, LLC. For privacy questions or data requests,
             contact the team through the channel you used to apply, or via WhatsApp/email
             provided on our application form.
           </p>
