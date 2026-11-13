@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import Image from 'next/image'
+import { brand } from '@/lib/brand'
 import { usePathname } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { ChevronLeft, ChevronRight, ChevronDown, Settings, MoreHorizontal, ShieldCheck } from 'lucide-react'
@@ -272,7 +273,7 @@ function LogoIcon() {
   return (
     <Image
       src="/logo.png"
-      alt="UnReal BS"
+      alt={brand.name}
       width={32}
       height={32}
       className="flex-shrink-0 rounded-lg"

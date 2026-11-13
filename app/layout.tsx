@@ -1,8 +1,10 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Inter, Hind_Siliguri, Noto_Serif_Bengali, JetBrains_Mono } from "next/font/google";
 import Script from "next/script";
 import { headers } from "next/headers";
 import { MarketingConsent } from "@/components/privacy/MarketingConsent";
+import { ServiceWorkerRegistration } from "@/components/pwa/ServiceWorkerRegistration";
+import { brand, brandKeywords } from "@/lib/brand";
 import "./globals.css";
 
 const inter = Inter({
@@ -32,9 +34,23 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "UnReal BS - Business Systems",
-  description: "English-first AI business operating system for CRM, automations, conversations, sites, and agents.",
-  keywords: ["CRM", "business", "Bangladesh", "automation", "AI agents"],
+  title: "UnReal BS - SaaS IT Agency",
+  description: brand.description,
+  keywords: brandKeywords,
+  applicationName: "UnReal BS",
+  manifest: "/manifest.webmanifest",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "UnReal BS",
+  },
+  formatDetection: {
+    telephone: false,
+  },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#070712",
 };
 
 export default async function RootLayout({
@@ -51,6 +67,7 @@ export default async function RootLayout({
       <body className="h-full antialiased">
         {children}
         <MarketingConsent />
+        <ServiceWorkerRegistration />
         <Script src="https://js.puter.com/v2/" strategy="lazyOnload" nonce={nonce} />
       </body>
     </html>

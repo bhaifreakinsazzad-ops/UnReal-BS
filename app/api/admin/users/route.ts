@@ -19,7 +19,7 @@ const DB_NOT_READY_MESSAGE = 'Database not yet configured.'
 const patchSchema = z.object({
   userId: z.string().uuid(),
   // Null clears the assignment (revokes CRM access without deleting the
-  // account — their wallet and khata keep working).
+  // account while their wallet keeps working).
   ghlLocationId: z.string().trim().min(1).max(100).nullable().optional(),
   // null = fall back to the platform default. 0 is a real value: it freezes
   // paid spending / disables the free tier for that account without deleting it.

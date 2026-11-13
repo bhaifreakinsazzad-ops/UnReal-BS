@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
 /* ============================================
-   UnReal BS - Design System Tokens (Tailwind v4)
+   UnReal Systems - Design System Tokens (Tailwind v4)
    ============================================ */
 
 @theme {
@@ -232,10 +232,10 @@ body {
 }
 
 /* ============================================
-   UnReal BS Component Utilities
+   UnReal Systems Component Utilities
    ============================================ */
 
-/* Glow effect for BhaiFreakin AI elements */
+/* Glow effect for UnReal AI elements */
 .glow-primary {
   box-shadow: 0 0 20px rgba(124, 58, 237, 0.4), 0 0 60px rgba(124, 58, 237, 0.15);
 }
@@ -304,7 +304,7 @@ body {
   animation: pulse-dot 2s ease-in-out infinite;
 }
 
-/* BhaiFreakin breathing glow */
+/* UnReal AI breathing glow */
 @keyframes breathe-glow {
   0%, 100% { box-shadow: 0 0 20px rgba(124, 58, 237, 0.40); }
   50% { box-shadow: 0 0 40px rgba(124, 58, 237, 0.70), 0 0 80px rgba(124, 58, 237, 0.30); }

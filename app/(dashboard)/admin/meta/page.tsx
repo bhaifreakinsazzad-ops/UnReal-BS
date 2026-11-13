@@ -3,7 +3,7 @@ import { auth } from '@/auth'
 import { MetaDatasetShell } from '@/components/admin/MetaDatasetShell'
 import { isAdminEmail } from '@/lib/security/admin'
 
-export const metadata = { title: 'Meta Dataset - UNREAL BS' }
+export const metadata = { title: 'Meta Dataset - UnReal Systems' }
 export const dynamic = 'force-dynamic'
 
 export default async function MetaDatasetPage() {

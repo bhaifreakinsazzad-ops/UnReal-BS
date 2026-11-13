@@ -7,6 +7,7 @@ import { Card } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { useStoreLocale } from './StorefrontChrome'
 import { trackMetaEvent } from '@/lib/meta/client-events'
+import { apiJson } from '@/lib/api-client'
 
 interface Order {
   accessToken: string
@@ -45,9 +46,8 @@ export function CheckoutView({ accessToken }: { accessToken: string }) {
   const [form, setForm] = useState({ method: '', payerReference: '', payerMsisdn: '' })
 
   function load() {
-    return fetch(`/api/checkout/${accessToken}`)
-      .then((res) => (res.ok ? res.json() : Promise.reject(new Error('failed'))))
-      .then((json: { order: Order; payment: { targets: Target[] } }) => {
+    return apiJson<{ order: Order; payment: { targets: Target[] } }>(`/api/checkout/${accessToken}`)
+      .then((json) => {
         setOrder(json.order)
         setTargets(json.payment?.targets ?? [])
         setForm((f) => ({
@@ -98,17 +98,14 @@ export function CheckoutView({ accessToken }: { accessToken: string }) {
     setSubmitting(true)
     setError(null)
     try {
-      const res = await fetch(`/api/checkout/${accessToken}`, {
+      await apiJson(`/api/checkout/${accessToken}`, {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           method: form.method || 'bkash',
           payerReference: form.payerReference.trim(),
           payerMsisdn: form.payerMsisdn.trim() || undefined,
         }),
-      })
-      const json = await res.json().catch(() => ({}))
-      if (!res.ok) throw new Error(json?.message ?? 'Could not save that.')
+      }, 'Could not save that.')
       await load()
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not save that.')

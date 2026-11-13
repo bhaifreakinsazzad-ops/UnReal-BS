@@ -31,6 +31,13 @@ jobs:
       - name: Pin npm
         run: npm install --global npm@11.16.0
 
+      - name: Configure npm retries
+        run: |
+          npm config set fetch-retries 5
+          npm config set fetch-retry-factor 2
+          npm config set fetch-retry-mintimeout 1000
+          npm config set fetch-retry-maxtimeout 30000
+
       - name: Install dependencies
         run: npm ci
 
@@ -44,7 +51,21 @@ jobs:
         run: npm test
 
       - name: Production dependency audit
-        run: npm audit --omit=dev --audit-level=high
+        shell: bash
+        run: |
+          set -o pipefail
+          for attempt in 1 2 3; do
+            echo "Running npm audit (attempt ${attempt}/3)..."
+            if npm audit --omit=dev --audit-level=high; then
+              exit 0
+            fi
+            if [ "$attempt" -lt 3 ]; then
+              echo "npm audit failed; retrying in $((attempt * 10)) seconds..."
+              sleep $((attempt * 10))
+            fi
+          done
+          echo "npm audit failed after 3 attempts"
+          exit 1
 
       - name: Production build
         # Placeholder values only — the build must not require real secrets.

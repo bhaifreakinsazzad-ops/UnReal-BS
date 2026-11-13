@@ -6,7 +6,6 @@ import {
   CheckCircle2,
   CreditCard,
   Inbox,
-  Landmark,
   LineChart,
   MessageSquare,
   ShieldCheck,
@@ -17,13 +16,13 @@ import { Badge } from '@/components/ui/badge'
 import { useLocale } from '@/lib/i18n/context'
 import { formatNumber } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
+import { brand } from '@/lib/brand'
 
 interface DashboardHomeProps {
   totalContacts: number | null
   totalConversations: number | null
   pipelineRevenue: number | null
   walletBalance: number | null
-  udharOutstanding: number | null
 }
 
 function money(amount: number) {
@@ -49,14 +48,12 @@ export function DashboardHome({
   totalConversations,
   pipelineRevenue,
   walletBalance,
-  udharOutstanding,
 }: DashboardHomeProps) {
   const locale = useLocale()
   const isBn = locale === 'bn'
 
   const actions = [
     { label: isBn ? 'ওয়ালেট দেখুন' : 'Open Wallet', href: '/payments', icon: CreditCard, tone: 'gold' },
-    { label: isBn ? 'উধার খাতা দেখুন' : 'Open Udhar Khata', href: '/udhar-khata', icon: Landmark, tone: 'green' },
     { label: isBn ? 'ইনবক্স খুলুন' : 'Open Inbox', href: '/conversations', icon: MessageSquare, tone: 'violet' },
     { label: isBn ? 'সার্ভিস দেখুন' : 'View Services', href: '/services', icon: ShieldCheck, tone: 'blue' },
   ]
@@ -65,13 +62,6 @@ export function DashboardHome({
   // set of strings ("Contact 5 pending leads") shown identically to every user
   // every day under a heading that implied it was computed for them.
   const nextBestActions: string[] = []
-  if (udharOutstanding !== null && udharOutstanding > 0) {
-    nextBestActions.push(
-      isBn
-        ? `উধার খাতায় ${money(udharOutstanding)} বকেয়া — আদায় করুন`
-        : `${money(udharOutstanding)} outstanding in Udhar Khata — collect it`
-    )
-  }
   if (totalConversations !== null && totalConversations > 0) {
     nextBestActions.push(isBn ? 'ইনবক্সের নতুন মেসেজগুলোর উত্তর দিন' : 'Reply to new messages in your inbox')
   }
@@ -116,15 +106,6 @@ export function DashboardHome({
       icon: CreditCard,
       tone: 'gold',
     },
-    {
-      label: isBn ? 'উধার বকেয়া' : 'Udhar Outstanding',
-      value: udharOutstanding === null ? '—' : money(udharOutstanding),
-      helper: udharOutstanding === null
-        ? (isBn ? 'লগইন করুন' : 'Sign in to view')
-        : (isBn ? 'উধার খাতা থেকে' : 'From Udhar Khata'),
-      icon: Landmark,
-      tone: 'green',
-    },
   ]
 
   return (
@@ -133,20 +114,20 @@ export function DashboardHome({
         <div className="grid gap-6 p-5 md:grid-cols-[1fr_auto] md:p-7">
           <div>
             <div className="mb-4 flex flex-wrap items-center gap-2">
-              <Badge variant="accent" dot>{isBn ? 'ফাউন্ডিং পাইলট' : 'Founding pilot'}</Badge>
+              <Badge variant="accent" dot>{isBn ? 'এজেন্সি অপারেটিং সিস্টেম' : brand.offerName}</Badge>
             </div>
             <h1 className="text-2xl md:text-4xl font-black tracking-tight">
-              {isBn ? 'কন্ট্রোল রুম' : 'Control Room'}
+              {isBn ? 'এজেন্সি কন্ট্রোল রুম' : 'Agency Control Room'}
             </h1>
             <p className="mt-3 max-w-2xl text-sm md:text-base leading-7 text-white/70">
               {isBn
-                ? 'লিড, স্টাফ, ফলো-আপ, বিক্রয়, রিপোর্ট — একটি সংযুক্ত বিজনেস সিস্টেম।'
-                : 'Lead, staff, follow-up, sales, reports — one connected business system.'}
+                ? 'লিড, ডেলিভারি, অটোমেশন, AI, ওয়ালেট, রিপোর্ট — একটি সংযুক্ত এজেন্সি অপারেটিং সিস্টেম।'
+                : 'Leads, delivery, automation, AI, wallet, and reporting — one connected agency operating system.'}
             </p>
             <p className="mt-2 max-w-2xl text-sm text-white/50">
               {isBn
-                ? 'আপনার ব্যবসা স্মৃতি, ম্যানুয়াল ফলো-আপ, বা একজন মানুষের উপর নির্ভর করা উচিত নয়। UnReal BS বিক্ষিপ্ত কাজকে একটি সংযুক্ত অপারেটিং সিস্টেমে পরিণত করে।'
-                : 'Your business should not depend on memory, manual follow-up, or one person. UnReal BS turns scattered work into a connected operating system.'}
+                ? `${brand.name} ছড়ানো টুল, ম্যানুয়াল ফলো-আপ, আর অস্পষ্ট রিপোর্টিংকে managed agency delivery system-এ পরিণত করে।`
+                : `${brand.name} turns scattered tools, manual follow-up, and unclear reporting into a managed agency delivery system.`}
             </p>
           </div>
           <div className="rounded-2xl border border-[#00C875]/20 bg-[#00C875]/10 p-5 md:w-72">
@@ -154,15 +135,15 @@ export function DashboardHome({
             <p className="mt-2 text-sm text-white/70">
               {isBn ? 'আজকের সর্বোচ্চ প্রভাবশালী কাজ দিয়ে শুরু করুন।' : 'Start with the highest-impact moves today.'}
             </p>
-            <Link href="/udhar-khata" className="mt-5 inline-flex items-center gap-2 text-sm font-black text-[#D8B86A]">
-              {isBn ? 'উধার খাতা দেখুন' : 'Check Udhar Khata'}
+            <Link href="/conversations" className="mt-5 inline-flex items-center gap-2 text-sm font-black text-[#D8B86A]">
+              {isBn ? 'ইনবক্স খুলুন' : 'Open Inbox'}
               <ArrowRight className="h-4 w-4" />
             </Link>
           </div>
         </div>
       </section>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-3 md:gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3 md:gap-4">
         {stats.map((stat) => {
           const Icon = stat.icon
           return (
@@ -239,22 +220,22 @@ export function DashboardHome({
       <div className="grid grid-cols-1 gap-4">
         <Card padding="lg" className="border-gray-200">
           <CardHeader>
-            <CardTitle>{isBn ? 'ফাউন্ডিং পাইলট স্ট্যাটাস' : 'Founding Pilot Status'}</CardTitle>
+            <CardTitle>{isBn ? 'এজেন্সি ওএস স্ট্যাটাস' : 'Agency OS Status'}</CardTitle>
             <Badge variant="accent" dot>{isBn ? 'প্রস্তুত' : 'Ready'}</Badge>
           </CardHeader>
           <div className="space-y-3 text-sm">
             {(isBn
               ? [
-                  'পাবলিক ল্যান্ডিং যোগ্যতার চাহিদা সংগ্রহ করে।',
+                  'পাবলিক ল্যান্ডিং এজেন্সি টেকওভার চাহিদা সংগ্রহ করে।',
                   'GHL রেকর্ডের মূল সিস্টেম হিসেবে থাকে।',
                   'ওয়ালেট ও উধার খাতা লাইভ ডেটা দেখায়।',
-                  'সার্ভিস মার্কেটপ্লেস ম্যানুয়াল অনবোর্ডিংয়ের জন্য প্রস্তুত।',
+                  'Managed SaaS IT সার্ভিস ক্যাটালগ ম্যানুয়াল অনবোর্ডিংয়ের জন্য প্রস্তুত।',
                 ]
               : [
-                  'Public landing captures eligibility demand.',
+                  'Public landing captures agency takeover demand.',
                   'GHL remains the system of record.',
-                  'Wallet and Udhar Khata show live data.',
-                  'Service marketplace is ready for manual onboarding.',
+                  'Wallet shows live balance data.',
+                  'Managed SaaS IT service catalog is ready for manual onboarding.',
                 ]
             ).map((item) => (
               <div key={item} className="flex gap-3 rounded-xl bg-gray-50 p-3">

@@ -1,11 +1,11 @@
 # Implementation Status
 
-Updated: 5 August 2026
+Updated: 20 September 2026
 
 ## Completed in code
 
 - Preserved the commerce candidate on `codex/commerce-candidate-snapshot` and moved reviewed work to `codex/pre-ad-launch`.
-- Pinned Node 24.18.x/npm 11.16.0; upgraded Next.js to 16.3.0 and DOMPurify to 3.4.13.
+- Pinned Node 24.18.x/npm 11.16.0; upgraded Next.js to 16.3.5 and DOMPurify to 3.4.13.
 - Added eight-hour sessions, centralized admin authorization, ten-minute password re-verification, request hardening, fail-closed high-value throttles, log redaction, audit events, CSP controls, and health endpoints.
 - Added Turnstile to `/apply` only and removed the public GHL contact ID response.
 - Converted launch commerce to platform-only ownership, zero seller payout, dark flags, manual operator-confirmed payment, hashed access tokens, restricted uploads, idempotent order/card mutations, and explicit rejection/refund evidence.

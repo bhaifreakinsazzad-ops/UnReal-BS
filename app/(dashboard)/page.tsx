@@ -15,31 +15,28 @@ import { getTenantLocationId } from '@/lib/tenant'
 export const dynamic = 'force-dynamic'
 
 async function getRealMoneySnapshot() {
-  if (!isSupabaseConfigured()) return { walletBalance: null, udharOutstanding: null }
+  if (!isSupabaseConfigured()) return { walletBalance: null }
 
   try {
     const session = await auth()
     const email = session?.user?.email
-    if (!email) return { walletBalance: null, udharOutstanding: null }
+    if (!email) return { walletBalance: null }
 
     const userId = await resolveUserIdByEmail(email)
-    if (!userId) return { walletBalance: null, udharOutstanding: null }
+    if (!userId) return { walletBalance: null }
 
     const supabase = getSupabaseAdmin()
-    const [walletRes, entriesRes, paymentsRes] = await Promise.all([
-      supabase.from('unreal_bs_wallets').select('balance_bdt').eq('user_id', userId).maybeSingle(),
-      supabase.from('unreal_bs_udhar_entries').select('amount').eq('user_id', userId),
-      supabase.from('unreal_bs_udhar_payments').select('amount').eq('user_id', userId),
-    ])
+    const walletRes = await supabase
+      .from('unreal_bs_wallets')
+      .select('balance_bdt')
+      .eq('user_id', userId)
+      .maybeSingle()
 
     const walletBalance = walletRes.data ? Number(walletRes.data.balance_bdt) : 0
-    const totalOwed = (entriesRes.data ?? []).reduce((sum, e) => sum + Number(e.amount), 0)
-    const totalPaid = (paymentsRes.data ?? []).reduce((sum, p) => sum + Number(p.amount), 0)
-    const udharOutstanding = totalOwed - totalPaid
 
-    return { walletBalance, udharOutstanding }
+    return { walletBalance }
   } catch {
-    return { walletBalance: null, udharOutstanding: null }
+    return { walletBalance: null }
   }
 }
 
@@ -54,7 +51,7 @@ export default async function DashboardPage() {
 
   // Per-tenant. A user with no workspace provisioned simply gets null CRM
   // stats (rendered as an em-dash) rather than another merchant's numbers.
-  // Their wallet and Udhar Khata figures below are their own regardless.
+  // Their wallet figure below is their own regardless.
   const locationId = await getTenantLocationId()
 
   if (locationId) {
@@ -72,7 +69,7 @@ export default async function DashboardPage() {
     }
   }
 
-  const { walletBalance, udharOutstanding } = await getRealMoneySnapshot()
+  const { walletBalance } = await getRealMoneySnapshot()
 
   return (
     <DashboardHome
@@ -80,7 +77,6 @@ export default async function DashboardPage() {
       totalConversations={totalConversations}
       pipelineRevenue={pipelineRevenue}
       walletBalance={walletBalance}
-      udharOutstanding={udharOutstanding}
     />
   )
 }

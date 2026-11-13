@@ -118,7 +118,7 @@ export async function POST(request: Request) {
         const response = await upsertContact(LOCATION_ID, {
           companyName: userRow?.business_name || undefined,
           email: userRow?.email || email,
-          source: 'UnReal BS Settings — Dedicated Account Request',
+          source: 'UnReal Systems Settings — Dedicated Account Request',
         })
         const contactId = response.contact?.id
         if (contactId) {

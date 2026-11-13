@@ -7,9 +7,7 @@
     "agentic_hq": "Agentic HQ",
     "workflows": "Workflows",
     "social_yo": "Social Yo",
-    "clan": "Clan",
-    "app_developer": "App Developer",
-    "skills": "Skills & Connections"
+    "app_developer": "App Developer"
   },
   "common": {
     "search": "Search...",
@@ -56,7 +54,7 @@
     "add_contact": "Add Contact",
     "send_message": "Send Message",
     "start_workflow": "Start Workflow",
-    "ask_bhaifreakin": "Ask BhaiFreakin",
+    "ask_bhaifreakin": "Ask UnReal AI",
     "performance": "Performance",
     "last_7_days": "Last 7 Days"
   },
@@ -104,7 +102,7 @@
     "readymade": "Ready-made Agents",
     "create_agent": "Create Agent",
     "bhaifreakin_label": "Our Flagship Agent",
-    "bhaifreakin_open": "Launch BhaiFreakin",
+    "bhaifreakin_open": "Launch UnReal AI",
     "no_agents": "No agents yet",
     "install_agent": "Install",
     "configure": "Configure",
@@ -140,17 +138,6 @@
     "published": "Published",
     "failed": "Failed"
   },
-  "clan": {
-    "title": "Clan",
-    "members": "Members",
-    "content": "Content",
-    "active_members": "Active Members",
-    "new_members": "New Members",
-    "revenue": "Revenue",
-    "popular_content": "Popular Content",
-    "add_content": "Add Content",
-    "add_section": "Add Section"
-  },
   "app_developer": {
     "title": "App Developer",
     "new_project": "New Project",
@@ -158,25 +145,6 @@
     "preview": "Preview",
     "ask_ai": "Ask AI...",
     "live": "Live"
-  },
-  "skills": {
-    "title": "Skills & Connections",
-    "browse": "Browse",
-    "installed": "Installed",
-    "custom": "Custom",
-    "all": "All",
-    "crm": "CRM",
-    "social_media": "Social Media",
-    "payment": "Payment",
-    "ai": "AI",
-    "mcp": "MCP",
-    "custom_label": "Custom",
-    "add_mcp": "Add MCP Server",
-    "server_url": "Server URL",
-    "api_key": "API Key",
-    "test_connection": "Test Connection",
-    "connected": "Connected",
-    "disconnected": "Disconnected"
   },
   "sites": {
     "title": "Sites",

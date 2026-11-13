@@ -81,7 +81,7 @@ export default auth((req) => {
   }
 
   const isPublic =
-    isStorefront || pathname.startsWith('/login') || pathname.startsWith('/signup') || pathname.startsWith('/unreal-bs') || pathname.startsWith('/apply') || pathname.startsWith('/terms') || pathname.startsWith('/privacy') || pathname.startsWith('/api/applications') || pathname.startsWith('/api/auth') || pathname.startsWith('/api/health') || pathname.startsWith('/_next') || pathname === '/favicon.ico' || isPublicAsset
+    isStorefront || pathname.startsWith('/login') || pathname.startsWith('/signup') || pathname.startsWith('/unreal-bs') || pathname.startsWith('/apply') || pathname.startsWith('/terms') || pathname.startsWith('/privacy') || pathname.startsWith('/api/applications') || pathname.startsWith('/api/auth') || pathname.startsWith('/api/health') || pathname.startsWith('/_next') || pathname === '/favicon.ico' || pathname === '/sw.js' || isPublicAsset
 
   let response: NextResponse
   if (!isPublic && !isLoggedIn) {

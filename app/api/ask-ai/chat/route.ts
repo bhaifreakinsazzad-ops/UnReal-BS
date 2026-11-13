@@ -7,7 +7,7 @@ import { logError } from '@/lib/log-error'
 
 export const dynamic = 'force-dynamic'
 
-// Free-tier server-side fallback for BhaiFreakin AI (the free product) — used
+// Free-tier server-side fallback for UnReal AI (the free product) — used
 // when the client-side Puter.js session isn't ready/authenticated, so the
 // assistant is never fully blocked. Unmetered, no wallet involved: this is
 // deliberately separate from the paid AI Subscriptions route

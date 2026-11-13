@@ -7,7 +7,7 @@ import { Card, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/input'
 import { useLocale } from '@/lib/i18n/context'
-import { requestPasswordReverification } from '@/lib/security/reverify-client'
+import { apiJson, apiStepUpJson } from '@/lib/api-client'
 
 interface VirtualCard {
   id: string
@@ -71,9 +71,8 @@ function MyCardsCard({ isBn }: { isBn: boolean }) {
 
   useEffect(() => {
     let cancelled = false
-    fetch('/api/virtual-cards')
-      .then((res) => (res.ok ? res.json() : Promise.reject(new Error('failed'))))
-      .then((json: { cards: VirtualCard[] }) => {
+    apiJson<{ cards: VirtualCard[] }>('/api/virtual-cards')
+      .then((json) => {
         if (!cancelled) setCards(json.cards ?? [])
       })
       .catch(() => {
@@ -91,25 +90,16 @@ function MyCardsCard({ isBn }: { isBn: boolean }) {
     setRevealing(card.id)
     setRevealError(null)
     try {
-      const revealRequest = () => fetch(`/api/virtual-cards/${card.id}/reveal`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: '{}',
-      })
-      let res = await revealRequest()
-      if (res.status === 428) {
-        const password = await requestPasswordReverification(isBn ? 'এই কার্ডের তথ্য দেখার আগে আপনার পাসওয়ার্ড আবার লিখুন।' : 'Re-enter your password before revealing this card.')
-        if (!password) throw new Error(isBn ? 'পাসওয়ার্ড যাচাই বাতিল হয়েছে।' : 'Password verification was cancelled.')
-        const verified = await fetch('/api/auth/reverify', {
-          method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ password }),
-        })
-        if (!verified.ok) throw new Error(isBn ? 'পাসওয়ার্ড সঠিক নয়।' : 'Password verification failed.')
-        res = await revealRequest()
-      }
-      const json = await res.json().catch(() => ({}))
-      if (!res.ok) {
-        throw new Error(json?.message ?? (isBn ? 'কার্ডের তথ্য দেখানো যায়নি।' : 'Could not reveal card credentials.'))
-      }
+      const json = await apiStepUpJson<{ credential: string }>(
+        `/api/virtual-cards/${card.id}/reveal`,
+        { method: 'POST', body: '{}' },
+        {
+          reverify: isBn ? 'এই কার্ডের তথ্য দেখার আগে আপনার পাসওয়ার্ড আবার লিখুন।' : 'Re-enter your password before revealing this card.',
+          cancelled: isBn ? 'পাসওয়ার্ড যাচাই বাতিল হয়েছে।' : 'Password verification was cancelled.',
+          badPassword: isBn ? 'পাসওয়ার্ড সঠিক নয়।' : 'Password verification failed.',
+          failure: isBn ? 'কার্ডের তথ্য দেখানো যায়নি।' : 'Could not reveal card credentials.',
+        },
+      )
       setRevealedValue({ cardId: card.id, value: json.credential })
       setCards((prev) => prev.map((c) => (c.id === card.id ? { ...c, revealed: true } : c)))
     } catch (err) {
@@ -203,9 +193,8 @@ function OrderCardCard({ isBn }: { isBn: boolean }) {
 
   useEffect(() => {
     let cancelled = false
-    fetch('/api/virtual-cards/order')
-      .then((res) => (res.ok ? res.json() : Promise.reject(new Error('failed'))))
-      .then((json: { order: CardOrder | null }) => {
+    apiJson<{ order: CardOrder | null }>('/api/virtual-cards/order')
+      .then((json) => {
         if (!cancelled) setOrder(json.order)
       })
       .catch(() => {
@@ -224,15 +213,11 @@ function OrderCardCard({ isBn }: { isBn: boolean }) {
     setSubmitting(true)
     setError(null)
     try {
-      const res = await fetch('/api/virtual-cards/order', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ note }),
-      })
-      const json = await res.json().catch(() => ({}))
-      if (!res.ok) {
-        throw new Error(json?.message ?? (isBn ? 'অর্ডার জমা দেওয়া যায়নি।' : 'Could not submit order.'))
-      }
+      const json = await apiJson<{ order: CardOrder }>(
+        '/api/virtual-cards/order',
+        { method: 'POST', body: JSON.stringify({ note }) },
+        isBn ? 'অর্ডার জমা দেওয়া যায়নি।' : 'Could not submit order.',
+      )
       setOrder(json.order)
       setNote('')
     } catch (err) {

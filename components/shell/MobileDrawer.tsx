@@ -6,6 +6,7 @@ import { usePathname } from 'next/navigation'
 import { X, Settings } from 'lucide-react'
 import { navItems } from './nav-items'
 import { cn } from '@/lib/utils'
+import { brand } from '@/lib/brand'
 
 interface MobileDrawerProps {
   open: boolean
@@ -35,9 +36,9 @@ export function MobileDrawer({ open, onClose, locale = 'en' }: MobileDrawerProps
         {/* Header */}
         <div className="flex items-center justify-between h-16 px-4 border-b border-white/5">
           <div className="flex items-center gap-2">
-            <Image src="/logo.png" alt="UnReal BS" width={32} height={32} className="h-8 w-8 rounded-lg object-contain" />
+            <Image src="/logo.png" alt={brand.name} width={32} height={32} className="h-8 w-8 rounded-lg object-contain" />
             <span className="font-bold text-white text-lg tracking-tight">
-              UnReal <span className="text-[#7C3AED]">BS</span>
+              UnReal <span className="text-[#7C3AED]">Systems</span>
             </span>
           </div>
           <button
