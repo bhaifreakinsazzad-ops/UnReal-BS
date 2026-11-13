@@ -58,7 +58,7 @@ export function apiErrorMessage(body: unknown): string | null {
  * Throws {@link ApiError} for non-2xx responses, using the server's `message`
  * field when present, otherwise `fallbackMessage`.
  */
-export async function apiJson<T = any>(
+export async function apiJson<T = Record<string, unknown>>(
   url: string,
   init?: RequestInit,
   fallbackMessage = 'Request failed.',
@@ -105,7 +105,7 @@ export async function stepUpFetch(options: {
  * Like {@link apiJson}, but for step-up-protected endpoints: transparently
  * handles the 428 → password prompt → retry flow.
  */
-export async function apiStepUpJson<T = any>(
+export async function apiStepUpJson<T = Record<string, unknown>>(
   url: string,
   init: RequestInit | undefined,
   messages: {
