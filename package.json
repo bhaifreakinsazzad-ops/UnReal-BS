@@ -26,7 +26,7 @@
     "clsx": "^2.1.1",
     "framer-motion": "^12.42.2",
     "lucide-react": "^1.25.0",
-    "next": "16.3.0",
+    "next": "16.3.5",
     "next-auth": "^5.0.0-beta.32",
     "next-intl": "^4.13.3",
     "react": "19.2.4",
@@ -45,7 +45,7 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",
-    "eslint-config-next": "16.3.0",
+    "eslint-config-next": "16.3.5",
     "tailwindcss": "^4",
     "typescript": "^5",
     "vitest": "^4.1.10"

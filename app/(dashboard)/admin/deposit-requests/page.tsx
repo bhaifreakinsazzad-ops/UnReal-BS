@@ -3,7 +3,7 @@ import { auth } from '@/auth'
 import { isAdminEmail } from '@/lib/security/admin'
 import { AdminDepositRequestsShell } from '@/components/admin/AdminDepositRequestsShell'
 
-export const metadata = { title: 'Deposit Approvals - UNREAL BS' }
+export const metadata = { title: 'Deposit Approvals - UnReal Systems' }
 
 export default async function AdminDepositRequestsPage() {
   const session = await auth()

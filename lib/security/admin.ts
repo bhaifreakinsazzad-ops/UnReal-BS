@@ -66,7 +66,7 @@ export async function ensurePlatformOwnerUserId(): Promise<string | null> {
     .insert({
       email: adminEmail,
       password_hash: unusablePassword,
-      business_name: 'UnReal BS',
+      business_name: 'UnReal Systems',
       role: 'platform_admin',
       ghl_location_id: process.env.GHL_LOCATION_ID ?? null,
     })

@@ -4,7 +4,7 @@ import { isAdminEmail } from '@/lib/security/admin'
 import { commerceEnabledFor } from '@/lib/commerce/flags'
 import { AdminOrdersShell } from '@/components/admin/AdminOrdersShell'
 
-export const metadata = { title: 'Product Orders - UNREAL BS' }
+export const metadata = { title: 'Product Orders - UnReal Systems' }
 
 export const dynamic = 'force-dynamic'
 
