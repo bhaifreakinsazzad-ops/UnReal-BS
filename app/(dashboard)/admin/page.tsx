@@ -17,7 +17,7 @@ import { auth } from '@/auth'
 import { isAdminEmail } from '@/lib/security/admin'
 import { Badge } from '@/components/ui/badge'
 
-export const metadata = { title: 'Admin - UNREAL BS' }
+export const metadata = { title: 'Admin - UnReal Systems' }
 
 export const dynamic = 'force-dynamic'
 

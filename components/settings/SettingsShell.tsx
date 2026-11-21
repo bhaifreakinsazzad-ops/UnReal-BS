@@ -123,8 +123,8 @@ function UpgradeRequestCard({ isBn }: { isBn: boolean }) {
       </CardHeader>
       <p className="text-sm leading-6 text-gray-600">
         {isBn
-          ? 'আপনি বর্তমানে শেয়ার্ড UnReal BS অ্যাকাউন্টে আছেন। সম্পূর্ণ ডেটা আইসোলেশন ও কাস্টম ব্র্যান্ডিংয়ের জন্য নিজের ডেডিকেটেড সাব-অ্যাকাউন্টের অনুরোধ করুন — অনুমোদিত হলে আমাদের টিম যোগাযোগ করবে।'
-          : "You're currently on the shared UnReal BS account. Request your own dedicated sub-account for full data isolation and custom branding — our team will reach out once approved."}
+          ? 'আপনি বর্তমানে শেয়ার্ড UnReal Systems অ্যাকাউন্টে আছেন। সম্পূর্ণ ডেটা আইসোলেশন ও কাস্টম ব্র্যান্ডিংয়ের জন্য নিজের ডেডিকেটেড সাব-অ্যাকাউন্টের অনুরোধ করুন — অনুমোদিত হলে আমাদের টিম যোগাযোগ করবে।'
+          : "You're currently on the shared UnReal Systems account. Request your own dedicated sub-account for full data isolation and custom branding — our team will reach out once approved."}
       </p>
 
       <div className="mt-4">

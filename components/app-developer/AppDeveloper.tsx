@@ -59,7 +59,7 @@ const initialCode = `<!DOCTYPE html>
 
 interface ChatMsg { id: string; role: 'user' | 'assistant'; content: string }
 
-const CODE_SYSTEM = `You are BhaiFreakin AI, an expert web developer assistant.
+const CODE_SYSTEM = `You are UnReal AI, an expert web developer assistant.
 When generating code: return only the code, properly formatted.
 When explaining: be concise and use Bengali if the user writes in Bengali.
 Focus on HTML, CSS, JavaScript. Generate production-quality code.`
@@ -68,7 +68,7 @@ export function AppDeveloper() {
   const [code, setCode] = useState(initialCode)
   const [aiInput, setAiInput] = useState('')
   const [aiMessages, setAiMessages] = useState<ChatMsg[]>([
-    { id: '0', role: 'assistant', content: 'আমি BhaiFreakin AI। আপনার অ্যাপ তৈরিতে কিভাবে সাহায্য করতে পারি? কোড জেনারেট, বাগ ফিক্স বা ডিজাইন — সব বলুন!' },
+    { id: '0', role: 'assistant', content: 'আমি UnReal AI। আপনার অ্যাপ তৈরিতে কিভাবে সাহায্য করতে পারি? কোড জেনারেট, বাগ ফিক্স বা ডিজাইন — সব বলুন!' },
   ])
   const [isTyping, setIsTyping] = useState(false)
   const [expandedFolders, setExpandedFolders] = useState<string[]>(['src'])
@@ -228,7 +228,7 @@ export function AppDeveloper() {
             <div className="w-6 h-6 rounded-lg bg-gradient-to-br from-[#7C3AED] to-[#00C875] flex items-center justify-center">
               <Sparkles className="w-3.5 h-3.5 text-white" />
             </div>
-            <p className="text-xs font-semibold text-gray-300">BhaiFreakin AI</p>
+            <p className="text-xs font-semibold text-gray-300">UnReal AI</p>
             <span className={cn('ml-auto w-2 h-2 rounded-full', isReady ? 'bg-[#00C875] animate-pulse' : 'bg-gray-600')} />
           </div>
 

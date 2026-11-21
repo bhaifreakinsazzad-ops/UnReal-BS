@@ -7,6 +7,7 @@ import { Input, Textarea } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { TurnstileWidget } from '@/components/privacy/TurnstileWidget'
 import { captureAttribution, createMetaEventId, trackMetaEvent } from '@/lib/meta/client-events'
+import { brand } from '@/lib/brand'
 
 interface EligibilityApplicationProps {
   intent?: string
@@ -59,22 +60,22 @@ export function EligibilityApplication({ intent, service }: EligibilityApplicati
       <div className="mx-auto max-w-5xl">
         <Link href="/unreal-bs" className="mb-8 inline-flex items-center gap-2 text-sm font-bold text-white/60 hover:text-white">
           <ArrowLeft className="h-4 w-4" />
-          Back to UNREAL BS
+          Back to {brand.name}
         </Link>
 
         <div className="grid gap-8 lg:grid-cols-[0.9fr_1.1fr]">
           <section className="rounded-2xl border border-white/10 bg-white/[0.05] p-6">
-            <p className="text-sm font-bold uppercase tracking-[0.18em] text-[#00C875]">Founding eligibility</p>
+            <p className="text-sm font-bold uppercase tracking-[0.18em] text-[#00C875]">Agency takeover eligibility</p>
             <h1 className="mt-4 text-4xl font-black leading-tight">
-              আমার Eligibility যাচাই করুন
+              Build my SaaS IT agency system
             </h1>
             <p className="mt-4 text-base leading-7 text-white/70">
-              Tell us about your business. We will verify fit, portal setup need, and opportunity-credit eligibility.
+              Tell us about your agency or business. We will verify fit, portal setup needs, and the first managed delivery sprint.
             </p>
             <div className="mt-8 space-y-4">
               {[
-                'Activation ৳4,999 and monthly ৳6,999 founding offer.',
-                'Starter opportunity-credit eligibility up to ৳5,000 outstanding.',
+                'Agency OS activation ৳4,999 and managed monthly ৳6,999 founding offer.',
+                'Scope CRM, funnel, AI, ads, wallet, and service delivery before activation.',
                 'No official HighLevel endorsement is claimed.',
               ].map((item) => (
                 <div key={item} className="flex gap-3 text-sm text-white/70">

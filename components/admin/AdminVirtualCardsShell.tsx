@@ -5,7 +5,7 @@ import { AlertTriangle, CreditCard, Loader2 } from 'lucide-react'
 import { Card, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input, Textarea } from '@/components/ui/input'
-import { requestPasswordReverification } from '@/lib/security/reverify-client'
+import { apiJson, apiStepUpJson } from '@/lib/api-client'
 
 interface PendingOrder {
   id: string
@@ -28,19 +28,15 @@ export function AdminVirtualCardsShell() {
 
   function refetch() {
     setLoading(true)
-    fetch('/api/admin/virtual-cards/pending-orders')
-      .then((res) => (res.ok ? res.json() : Promise.reject(new Error('failed'))))
-      .then((json: { orders: PendingOrder[] }) => setOrders(json.orders ?? []))
+    apiJson<{ orders: PendingOrder[] }>('/api/admin/virtual-cards/pending-orders')
+      .then((json) => setOrders(json.orders ?? []))
       .catch(() => setError(true))
       .finally(() => setLoading(false))
   }
 
   useEffect(() => {
-    fetch('/api/admin/virtual-cards/pending-orders')
-      .then((res) => (res.ok ? res.json() : Promise.reject(new Error('failed'))))
-      .then((json: { orders: PendingOrder[] }) => setOrders(json.orders ?? []))
-      .catch(() => setError(true))
-      .finally(() => setLoading(false))
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    refetch()
   }, [])
 
   return (
@@ -115,34 +111,28 @@ function AssignOrderCard({
     onAssigning(order.id)
     try {
       const idempotencyKey = crypto.randomUUID().replace(/-/g, '')
-      const assign = () => fetch('/api/admin/virtual-cards/assign', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Idempotency-Key': idempotencyKey },
-        body: JSON.stringify({
-          orderId: order.id,
-          label,
-          cardBrand: cardBrand || undefined,
-          last4,
-          expiryMonth: expiryMonth ? Number(expiryMonth) : undefined,
-          expiryYear: expiryYear ? Number(expiryYear) : undefined,
-          credential,
-          chargedAmountBdt: Number(chargedAmountBdt),
-        }),
-      })
-      let res = await assign()
-      if (res.status === 428) {
-        const password = await requestPasswordReverification('Re-enter your password to authorize this card assignment.')
-        if (!password) throw new Error('Password verification was cancelled.')
-        const verified = await fetch('/api/auth/reverify', {
-          method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ password }),
-        })
-        if (!verified.ok) throw new Error('Password verification failed.')
-        res = await assign()
-      }
-      const json = await res.json().catch(() => ({}))
-      if (!res.ok) {
-        throw new Error(json?.message ?? 'Assignment failed.')
-      }
+      await apiStepUpJson(
+        '/api/admin/virtual-cards/assign',
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Idempotency-Key': idempotencyKey },
+          body: JSON.stringify({
+            orderId: order.id,
+            label,
+            cardBrand: cardBrand || undefined,
+            last4,
+            expiryMonth: expiryMonth ? Number(expiryMonth) : undefined,
+            expiryYear: expiryYear ? Number(expiryYear) : undefined,
+            credential,
+            chargedAmountBdt: Number(chargedAmountBdt),
+          }),
+        },
+        {
+          reverify: 'Re-enter your password to authorize this card assignment.',
+          cancelled: 'Password verification was cancelled.',
+          failure: 'Assignment failed.',
+        },
+      )
       onAssigned()
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Assignment failed.')

@@ -5,6 +5,7 @@ import { CheckCircle2, Loader2, XCircle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
+import { apiJson } from '@/lib/api-client'
 
 interface Payout {
   id: string
@@ -40,9 +41,8 @@ export function AdminPayoutsShell() {
   const [refs, setRefs] = useState<Record<string, string>>({})
 
   function load() {
-    return fetch('/api/admin/payouts')
-      .then((res) => (res.ok ? res.json() : Promise.reject(new Error('failed'))))
-      .then((json: { payouts: Payout[] }) => setPayouts(json.payouts ?? []))
+    return apiJson<{ payouts: Payout[] }>('/api/admin/payouts')
+      .then((json) => setPayouts(json.payouts ?? []))
   }
 
   useEffect(() => {
@@ -62,13 +62,10 @@ export function AdminPayoutsShell() {
     setError(null)
     setNotice(null)
     try {
-      const res = await fetch('/api/admin/payouts', {
+      await apiJson('/api/admin/payouts', {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ payoutId, status, reference: refs[payoutId]?.trim() || undefined }),
-      })
-      const json = await res.json().catch(() => ({}))
-      if (!res.ok) throw new Error(json?.message ?? 'Could not update this payout.')
+      }, 'Could not update this payout.')
       setNotice(status === 'paid' ? 'Marked as sent.' : 'Returned to the seller’s wallet.')
       await load()
     } catch (err) {

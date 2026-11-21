@@ -77,10 +77,6 @@ const features = [
   { section:"safety", title:"Future Workspace Modules", status:"ভবিষ্যৎ", plain:"Agentic HQ, MeetAlly, Clan, Skills, Opportunities ও Credit Center navigation/product concepts হিসেবে আছে; বর্তমান launch-এ connected end-to-end feature হিসেবে ধরা যাবে না।", who:"Product roadmap ও investor audience", outcome:"ভবিষ্যৎ expansion বোঝা, current capability-এর সঙ্গে গুলিয়ে না ফেলা।", steps:["concept defined","UX entry","backend contract","future release"], remember:["coming-soon label","no revenue claim","separate acceptance needed"], sources:["app/(dashboard)","IMPLEMENTATION_STATUS.md","ARCHITECTURE.md"] },
 ];
 
-async function writeBlob(filePath, blob) {
-  await fs.writeFile(filePath, new Uint8Array(await blob.arrayBuffer()));
-}
-
 function shape(slide, geometry, left, top, width, height, fill = "none", line = "none") {
   return slide.shapes.add({
     geometry,

@@ -1,4 +1,4 @@
-// What UnReal BS keeps when somebody sells a digital product here.
+// What UnReal Systems keeps when somebody sells a digital product here.
 //
 // This module is imported by BOTH the seller's editor (which quotes the payout
 // before they publish) and the checkout route (which writes the split into the
