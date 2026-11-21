@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge'
 import { Card, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { apiJson } from '@/lib/api-client'
 
 interface AdminUser {
   id: string
@@ -36,9 +37,8 @@ export function AdminUsersShell() {
   const [saved, setSaved] = useState<Record<string, boolean>>({})
 
   useEffect(() => {
-    fetch('/api/admin/users')
-      .then((res) => (res.ok ? res.json() : Promise.reject(new Error('failed'))))
-      .then((json: { users: AdminUser[] }) => {
+    apiJson<{ users: AdminUser[] }>('/api/admin/users')
+      .then((json) => {
         const list = json.users ?? []
         setUsers(list)
         setDrafts(Object.fromEntries(list.map((u) => [u.id, u.ghlLocationId ?? ''])))
@@ -54,9 +54,8 @@ export function AdminUsersShell() {
     setSaving(u.id)
     setError(null)
     try {
-      const res = await fetch('/api/admin/users', {
+      const json = await apiJson('/api/admin/users', {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           userId: u.id,
           ghlLocationId: raw === '' ? null : raw,
@@ -65,9 +64,7 @@ export function AdminUsersShell() {
           dailySpendCapBdt: (caps[u.id] ?? '') === '' ? null : Number(caps[u.id]),
           freeDailyMessages: (frees[u.id] ?? '') === '' ? null : Number(frees[u.id]),
         }),
-      })
-      const json = await res.json().catch(() => ({}))
-      if (!res.ok) throw new Error(json?.message ?? 'Could not update this user.')
+      }, 'Could not update this user.')
 
       setUsers((prev) => prev.map((x) => (x.id === u.id ? { ...x, ghlLocationId: raw === '' ? null : raw } : x)))
       setSaved((s) => ({ ...s, [u.id]: true }))

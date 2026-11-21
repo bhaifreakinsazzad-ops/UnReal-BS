@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { Loader2, Wallet } from 'lucide-react'
 import { Card } from '@/components/ui/card'
 import { useLocale } from '@/lib/i18n/context'
+import { apiJson } from '@/lib/api-client'
 
 export function formatBDT(value: number) {
   return `৳${value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
@@ -26,9 +27,8 @@ export function WalletBalanceChip({ onLoad }: { onLoad?: (balance: WalletBalance
 
   useEffect(() => {
     let cancelled = false
-    fetch('/api/wallet')
-      .then((res) => (res.ok ? res.json() : Promise.reject(new Error('failed'))))
-      .then((json: WalletBalance) => {
+    apiJson<WalletBalance>('/api/wallet')
+      .then((json) => {
         if (cancelled) return
         setBalance(json.balance)
         onLoad?.(json)

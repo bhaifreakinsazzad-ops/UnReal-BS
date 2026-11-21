@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
+import { apiJson } from '@/lib/api-client'
 
 interface AdminCampaign {
   id: string
@@ -61,9 +62,8 @@ export function AdminAdCampaignsShell() {
   const [results, setResults] = useState<Record<string, { reach: string; clicks: string; spend: string; fee: string }>>({})
 
   function load() {
-    fetch('/api/admin/ad-campaigns')
-      .then((res) => (res.ok ? res.json() : Promise.reject(new Error('failed'))))
-      .then((json: { campaigns: AdminCampaign[] }) => {
+    apiJson<{ campaigns: AdminCampaign[] }>('/api/admin/ad-campaigns')
+      .then((json) => {
         const list = json.campaigns ?? []
         setCampaigns(list)
         setResults(
@@ -92,13 +92,10 @@ export function AdminAdCampaignsShell() {
     setBusy(id)
     setError(null)
     try {
-      const res = await fetch('/api/admin/ad-campaigns', {
+      await apiJson('/api/admin/ad-campaigns', {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ campaignId: id, ...payload }),
-      })
-      const json = await res.json().catch(() => ({}))
-      if (!res.ok) throw new Error(json?.message ?? 'Could not update this campaign.')
+      }, 'Could not update this campaign.')
       setLoading(true)
       load()
     } catch (err) {

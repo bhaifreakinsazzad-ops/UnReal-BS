@@ -3,7 +3,7 @@ import { notFound } from 'next/navigation'
 import { requireAdminSession } from '@/lib/security/admin'
 import { commerceEnabledFor } from '@/lib/commerce/flags'
 
-export const metadata = { title: 'Edit product - UNREAL BS' }
+export const metadata = { title: 'Edit product - UnReal Systems' }
 
 export const dynamic = 'force-dynamic'
 

@@ -5,6 +5,7 @@ import { CheckCircle2, Clock, Download, Loader2, MessageCircle, PlayCircle } fro
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { useStoreLocale } from './StorefrontChrome'
+import { apiJson } from '@/lib/api-client'
 
 interface Lesson {
   id: string
@@ -53,16 +54,14 @@ export function LearnView({ accessToken }: { accessToken: string }) {
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    fetch(`/api/learn/${accessToken}`)
-      .then((res) => (res.ok ? res.json() : Promise.reject(new Error('failed'))))
-      .then(
-        (json: {
-          access: boolean
-          order: { status: string }
-          product: Product | null
-          lessons: Lesson[]
-          assets: Asset[]
-        }) => {
+    apiJson<{
+      access: boolean
+      order: { status: string }
+      product: Product | null
+      lessons: Lesson[]
+      assets: Asset[]
+    }>(`/api/learn/${accessToken}`)
+      .then((json) => {
           setAccess(json.access)
           setStatus(json.order?.status ?? '')
           setProduct(json.product)

@@ -3,7 +3,7 @@ import { auth } from '@/auth'
 import { isAdminEmail } from '@/lib/security/admin'
 import { AdminBundlesShell } from '@/components/admin/AdminBundlesShell'
 
-export const metadata = { title: 'AI Packages - UNREAL BS' }
+export const metadata = { title: 'AI Packages - UnReal Systems' }
 
 export const dynamic = 'force-dynamic'
 
