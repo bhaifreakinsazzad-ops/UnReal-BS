@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge'
 import { Card, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { apiJson } from '@/lib/api-client'
 
 interface DepositRequest {
   id: string
@@ -49,9 +50,8 @@ export function AdminDepositRequestsShell() {
   // than an async body, so setState happens in a callback and not synchronously
   // inside the effect.
   useEffect(() => {
-    fetch('/api/admin/deposit-requests')
-      .then((res) => (res.ok ? res.json() : Promise.reject(new Error('failed'))))
-      .then((json: { requests: DepositRequest[] }) => {
+    apiJson<{ requests: DepositRequest[] }>('/api/admin/deposit-requests')
+      .then((json) => {
         const list = json.requests ?? []
         setRequests(list)
         // Pre-fill the CREDIT for bundle purchases (price + bonus), otherwise
@@ -73,13 +73,10 @@ export function AdminDepositRequestsShell() {
     setSubmitting(r.id)
     setError(null)
     try {
-      const res = await fetch('/api/admin/deposit-requests', {
+      await apiJson('/api/admin/deposit-requests', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ requestId: r.id, fulfilledAmountBdt: amount, method: r.method ?? undefined }),
-      })
-      const json = await res.json().catch(() => ({}))
-      if (!res.ok) throw new Error(json?.message ?? 'Could not approve this deposit request.')
+      }, 'Could not approve this deposit request.')
 
       setDone((d) => ({ ...d, [r.id]: formatBDT(amount) }))
       setRequests((prev) => prev.filter((x) => x.id !== r.id))

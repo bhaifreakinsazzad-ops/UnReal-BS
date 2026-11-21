@@ -1,8 +1,8 @@
 import { EligibilityApplication } from '@/components/marketing/EligibilityApplication'
 
 export const metadata = {
-  title: 'Apply for UNREAL BS Eligibility',
-  description: 'Apply for the UNREAL BS founding-client pilot and opportunity credit eligibility.',
+  title: 'Apply for UnReal Systems Eligibility',
+  description: 'Apply for the UnReal Systems founding-client pilot and opportunity credit eligibility.',
 }
 
 export default async function ApplyPage({

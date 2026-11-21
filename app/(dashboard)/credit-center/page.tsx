@@ -1,6 +1,6 @@
 import { ComingSoonShell } from '@/components/shared/ComingSoonShell'
 
-export const metadata = { title: 'Credit Center - UNREAL BS' }
+export const metadata = { title: 'Credit Center - UnReal Systems' }
 
 export default function CreditCenterPage() {
   return (

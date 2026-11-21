@@ -20,7 +20,7 @@ import { getSupabaseAdmin, isSupabaseConfigured } from '@/lib/supabase/client'
 //     inherit the environment default. Callers must render a
 //     "workspace not connected yet" state instead of somebody else's CRM.
 //
-// Money features (wallet, Udhar Khata, virtual cards, AI billing) do not go
+// Money features (wallet, virtual cards, AI billing) do not go
 // through here — they are already scoped by user_id in their own tables and
 // are safe for public signup today.
 // ─────────────────────────────────────────────────────────────────────────────

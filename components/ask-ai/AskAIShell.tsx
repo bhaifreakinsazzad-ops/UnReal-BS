@@ -5,6 +5,7 @@ import { Send, Sparkles, Loader2, RotateCcw, Copy, Check, Volume2, Square } from
 import { cn } from '@/lib/utils'
 import { useLocale } from '@/lib/i18n/context'
 import { usePuterAI } from '@/hooks/usePuterAI'
+import { brand } from '@/lib/brand'
 
 interface Message {
   id: string
@@ -33,16 +34,16 @@ const QUICK_PROMPTS = {
 }
 
 const SYSTEM_PROMPT = {
-  en: `You are BhaiFreakin, an AI business advisor for operators using UnReal BS.
+  en: `You are ${brand.aiAssistantName}, an AI business advisor for operators using ${brand.name}.
 Answer in clear English by default. If the user writes in Bangla, answer in Bangla.
-Keep advice practical, concise, and directly usable for marketing, sales, automation, customer service, pricing, and business operations.`,
-  bn: `তুমি BhaiFreakin, UnReal BS ব্যবহারকারী ব্যবসা অপারেটরদের AI বিজনেস অ্যাডভাইজার।
-বাংলায় পরিষ্কার, সংক্ষিপ্ত এবং বাস্তবসম্মত উত্তর দাও। মার্কেটিং, সেলস, অটোমেশন, কাস্টমার সার্ভিস ও অপারেশনে ব্যবহারযোগ্য পরামর্শ দাও।`,
+Keep advice practical, concise, and directly usable for SaaS agency delivery, marketing, sales, automation, customer service, pricing, and business operations.`,
+  bn: `তুমি ${brand.aiAssistantName}, ${brand.name} ব্যবহারকারী অপারেটরদের AI বিজনেস অ্যাডভাইজার।
+বাংলায় পরিষ্কার, সংক্ষিপ্ত এবং বাস্তবসম্মত উত্তর দাও। SaaS agency delivery, মার্কেটিং, সেলস, অটোমেশন, কাস্টমার সার্ভিস ও অপারেশনে ব্যবহারযোগ্য পরামর্শ দাও।`,
 }
 
 const welcome = {
-  en: 'I am BhaiFreakin AI.\n\nAsk anything about marketing, sales, customer service, pricing, workflows, or business operations. I will keep the answer practical and execution-ready.',
-  bn: 'আমি BhaiFreakin AI।\n\nমার্কেটিং, সেলস, কাস্টমার সার্ভিস, প্রাইসিং, ওয়ার্কফ্লো বা অপারেশন নিয়ে যেকোনো প্রশ্ন করুন। আমি ব্যবহারযোগ্য উত্তর দেব।',
+  en: `I am ${brand.aiAssistantName}.\n\nAsk anything about agency delivery, marketing, sales, customer service, pricing, workflows, or business operations. I will keep the answer practical and execution-ready.`,
+  bn: `আমি ${brand.aiAssistantName}।\n\nAgency delivery, মার্কেটিং, সেলস, কাস্টমার সার্ভিস, প্রাইসিং, ওয়ার্কফ্লো বা অপারেশন নিয়ে যেকোনো প্রশ্ন করুন। আমি ব্যবহারযোগ্য উত্তর দেব।`,
 }
 
 function formatTime(ts: number, locale: 'bn' | 'en') {
@@ -50,7 +51,7 @@ function formatTime(ts: number, locale: 'bn' | 'en') {
 }
 
 // Server-side free-tier fallback (app/api/ask-ai/chat/route.ts) — used
-// whenever Puter isn't ready or a Puter call fails, so BhaiFreakin AI is
+// whenever Puter isn't ready or a Puter call fails, so the assistant is
 // never fully blocked waiting on a client-side sign-in.
 async function sendViaFallback(systemPrompt: string, history: Message[], content: string): Promise<string> {
   const messages = [
@@ -109,7 +110,7 @@ export function AskAIShell() {
         try {
           const history = historySnapshot
             .slice(-6)
-            .map(m => `${m.role === 'user' ? 'User' : 'BhaiFreakin'}: ${m.content}`)
+            .map(m => `${m.role === 'user' ? 'User' : brand.aiAssistantName}: ${m.content}`)
             .join('\n')
           const prompt = history ? `${history}\nUser: ${content}` : content
           reply = await sendMessage(prompt, SYSTEM_PROMPT[locale])
@@ -186,7 +187,7 @@ export function AskAIShell() {
             <Sparkles className="w-4 h-4 text-white" />
           </div>
           <div>
-            <p className="font-bold text-gray-900 text-sm">BhaiFreakin AI</p>
+            <p className="font-bold text-gray-900 text-sm">{brand.aiAssistantName}</p>
             <div className="flex items-center gap-1.5">
               <span className="w-1.5 h-1.5 rounded-full bg-[#00C875] animate-pulse" />
               <span className="text-xs text-gray-400">{isReady ? (isBn ? 'প্রস্তুত' : 'Ready') : (isBn ? 'ফ্রি মোড' : 'Free mode')}</span>
@@ -278,7 +279,7 @@ export function AskAIShell() {
             value={input}
             onChange={e => setInput(e.target.value)}
             onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend() } }}
-            placeholder={isBn ? 'BhaiFreakin-কে জিজ্ঞেস করুন...' : 'Ask BhaiFreakin...'}
+            placeholder={isBn ? 'UnReal AI-কে জিজ্ঞেস করুন...' : `Ask ${brand.aiAssistantName}...`}
             rows={1}
             className="flex-1 bg-transparent text-sm text-gray-800 placeholder:text-gray-400 resize-none focus:outline-none min-h-[36px] max-h-32 py-1.5 leading-relaxed disabled:opacity-50"
           />
