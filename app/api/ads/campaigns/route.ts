@@ -13,7 +13,7 @@ export const dynamic = 'force-dynamic'
 const DB_NOT_READY_MESSAGE =
   'Ads are not available yet. Run the migration in supabase/migrations/0011_meta_ads.sql.'
 
-// Ad spend is deliberately NOT taken from the UnReal BS wallet. The wallet is a
+// Ad spend is deliberately NOT taken from the UnReal Systems wallet. The wallet is a
 // prepaid AI balance with its own ledger; ad money is settled with the operator
 // (managed mode) or charged to the customer's own Meta payment method (API
 // mode). Mixing them would make the wallet ledger unreconcilable during a

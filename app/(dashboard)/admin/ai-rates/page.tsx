@@ -3,7 +3,7 @@ import { auth } from '@/auth'
 import { isAdminEmail } from '@/lib/security/admin'
 import { AdminAIRatesShell } from '@/components/admin/AdminAIRatesShell'
 
-export const metadata = { title: 'AI Rate Card - UNREAL BS' }
+export const metadata = { title: 'AI Rate Card - UnReal Systems' }
 
 export const dynamic = 'force-dynamic'
 

@@ -120,8 +120,8 @@ const allNavItems: NavItem[] = [
   },
   {
     key: 'services',
-    labelBn: '৪০০ সার্ভিস',
-    labelEn: '400 Services',
+    labelBn: 'SaaS IT সার্ভিস',
+    labelEn: 'SaaS IT Services',
     href: '/services',
     icon: BriefcaseBusiness,
     badge: 'MVP',
@@ -194,8 +194,8 @@ const allNavItems: NavItem[] = [
   },
   {
     key: 'ask_ai',
-    labelBn: 'BhaiFreakin AI',
-    labelEn: 'BhaiFreakin AI',
+    labelBn: 'UnReal AI',
+    labelEn: 'UnReal AI',
     href: '/ask-ai',
     icon: Sparkles,
     badge: 'AI',

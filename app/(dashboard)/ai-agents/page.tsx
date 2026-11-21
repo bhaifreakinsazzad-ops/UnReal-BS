@@ -2,7 +2,7 @@ import { AIAgentsShell } from '@/components/ai-agents/AIAgentsShell'
 import { getTenantLocationId } from '@/lib/tenant'
 import { WorkspaceNotConnected } from '@/components/shared/WorkspaceNotConnected'
 
-export const metadata = { title: 'AI এজেন্ট — UnReal BS' }
+export const metadata = { title: 'AI এজেন্ট — UnReal Systems' }
 
 export const dynamic = 'force-dynamic'
 

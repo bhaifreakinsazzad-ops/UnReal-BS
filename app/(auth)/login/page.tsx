@@ -6,6 +6,7 @@ import Link from 'next/link'
 import { signIn } from 'next-auth/react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Loader2, ShieldCheck } from 'lucide-react'
+import { brand } from '@/lib/brand'
 
 export default function LoginPage() {
   return (
@@ -62,15 +63,15 @@ function LoginForm() {
           <div className="mx-auto mb-5 flex h-32 w-32 items-center justify-center rounded-[2rem] border border-[#D8B86A]/25 bg-black/30 shadow-[0_0_60px_rgba(216,184,106,0.22)] backdrop-blur">
             <Image
               src="/logo.png"
-              alt="UnReal BS Business Systems"
+              alt={`${brand.name} SaaS IT Agency`}
               width={124}
               height={124}
               className="h-28 w-28 object-contain"
               priority
             />
           </div>
-          <h1 className="text-3xl font-bold tracking-tight text-white">UnReal BS</h1>
-          <p className="text-[#D8B86A] text-sm mt-1 font-medium tracking-wide">Business Systems</p>
+          <h1 className="text-3xl font-bold tracking-tight text-white">{brand.name}</h1>
+          <p className="text-[#D8B86A] text-sm mt-1 font-medium tracking-wide">SaaS IT Agency</p>
         </div>
 
         <form onSubmit={handleSubmit} className="bg-[#101024]/90 border border-white/10 rounded-3xl p-6 space-y-5 shadow-2xl backdrop-blur">
@@ -81,7 +82,7 @@ function LoginForm() {
             </div>
             <h2 className="text-white font-bold text-xl mb-1">Sign in to your workspace</h2>
             <p className="text-gray-400 text-sm">
-              Welcome back. Enter your details to reach your wallet, inbox and business tools.
+              Welcome back. Enter your details to reach your agency OS, wallet, inbox, and client tools.
             </p>
           </div>
 

@@ -1,6 +1,6 @@
 import { AdsShell } from '@/components/ads/AdsShell'
 
-export const metadata = { title: 'Facebook Ads - UNREAL BS' }
+export const metadata = { title: 'Facebook Ads - UnReal Systems' }
 
 export const dynamic = 'force-dynamic'
 

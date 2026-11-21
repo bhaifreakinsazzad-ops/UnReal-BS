@@ -54,7 +54,7 @@
     "add_contact": "Add Contact",
     "send_message": "Send Message",
     "start_workflow": "Start Workflow",
-    "ask_bhaifreakin": "Ask BhaiFreakin",
+    "ask_bhaifreakin": "Ask UnReal AI",
     "performance": "Performance",
     "last_7_days": "Last 7 Days"
   },
@@ -102,7 +102,7 @@
     "readymade": "Ready-made Agents",
     "create_agent": "Create Agent",
     "bhaifreakin_label": "Our Flagship Agent",
-    "bhaifreakin_open": "Launch BhaiFreakin",
+    "bhaifreakin_open": "Launch UnReal AI",
     "no_agents": "No agents yet",
     "install_agent": "Install",
     "configure": "Configure",
