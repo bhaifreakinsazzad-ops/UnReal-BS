@@ -3,15 +3,16 @@ import { ArrowRight, BriefcaseBusiness, CheckCircle2 } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardHeader, CardTitle } from '@/components/ui/card'
 import type { ServicePack } from '@/lib/unreal/services'
+import { brand } from '@/lib/brand'
 
 export function ServicesMarketplaceShell({ services }: { services: ServicePack[] }) {
   return (
     <div className="mx-auto max-w-[1440px] space-y-5 p-4 md:p-6">
       <div className="rounded-2xl bg-[#07101F] p-5 text-white md:p-7">
-        <Badge variant="accent" dot>NRE Service Marketplace</Badge>
-        <h1 className="mt-4 text-2xl font-black md:text-4xl">400 Services</h1>
+        <Badge variant="accent" dot>{brand.serviceCatalogName}</Badge>
+        <h1 className="mt-4 text-2xl font-black md:text-4xl">Managed SaaS IT Services</h1>
         <p className="mt-3 max-w-2xl text-sm leading-6 text-white/65">
-          Starter solution packs for founding clients. Request setup now, then the team manually scopes and activates the right service path.
+          Starter solution packs for agency clients. Request setup now, then the team scopes the right SaaS, automation, AI, ads, and support path before activation.
         </p>
       </div>
 
@@ -39,11 +40,11 @@ export function ServicesMarketplaceShell({ services }: { services: ServicePack[]
       <Card className="border-[#D8B86A]/30 bg-[#FFF8E6]">
         <CardHeader>
           <CardTitle>Need a single service only?</CardTitle>
-          <Badge variant="warning">NRE catalog</Badge>
+          <Badge variant="warning">Agency catalog</Badge>
         </CardHeader>
         <div className="grid gap-4 md:grid-cols-[1fr_auto] md:items-center">
           <p className="text-sm leading-6 text-gray-600">
-            Request any individual service from the NRE 400-service catalog. The founding-pilot team will confirm scope, price, and delivery path manually before activation.
+            Request any individual service from the managed agency catalog. The operator team will confirm scope, price, owner, and delivery path manually before activation.
           </p>
           <Link
             href="/apply?intent=service&service=individual-service"

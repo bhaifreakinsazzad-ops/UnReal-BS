@@ -82,7 +82,7 @@ export async function POST(request: Request) {
       userId,
       email,
       { amountBdt: parsed.data.amountBdt, note: parsed.data.note },
-      { tag: 'AI-TOPUP-REQUEST', source: 'UnReal BS AI Subscriptions — Top-up Request' }
+      { tag: 'AI-TOPUP-REQUEST', source: 'UnReal Systems AI Subscriptions — Top-up Request' }
     )
 
     if ('error' in result && result.error) {
